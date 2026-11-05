@@ -1,0 +1,1800 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL Lab Workbench</title>
+<meta name="description" content="Simulador de banco de dados SQL para praticar consultas no navegador, sem instalar nada.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: barra superior, navegador de tabelas à esquerda, editor + resultados no centro, desafios à direita. */
+:root{
+  --bg:#e9eff2; --panel:#ffffff; --panel2:#f4f7f9; --line:#d5dfe5; --ink:#12262f; --mute:#5a7280;
+  --accent:#0a6b86; --accent-ink:#ffffff; --accent-soft:#d9eef4; --amber:#c27800; --ok:#12805a; --ok-soft:#dff3ea; --err:#c23b3b; --err-soft:#fbe6e6; --warn-soft:#fff1d6;
+  --sel:#cfe7ef; --zebra:#f6f9fb; --shadow:0 1px 2px rgba(18,38,47,.08),0 6px 20px rgba(18,38,47,.08);
+  --c-kw:#0b5cad; --c-fn:#8a5a00; --c-str:#1b7f4b; --c-num:#b4470a; --c-tbl:#006d77; --c-col:#3b5a69; --c-cm:#7b909b;
+  --ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --bar:52px; --lh:21px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a1216; --panel:#111b21; --panel2:#0d161b; --line:#21343e; --ink:#dbe8ee; --mute:#8099a6;
+  --accent:#3bb3d3; --accent-ink:#06222b; --accent-soft:#12323c; --amber:#e8b04b; --ok:#3dd39a; --ok-soft:#10342a; --err:#ff8080; --err-soft:#3a1c1f; --warn-soft:#3a2f14;
+  --sel:#173947; --zebra:#0f1a20; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  --c-kw:#6fb3ff; --c-fn:#e3b25b; --c-str:#5fd19b; --c-num:#f29b62; --c-tbl:#5cd0d9; --c-col:#a8c2cf; --c-cm:#6d8794; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0a1216; --panel:#111b21; --panel2:#0d161b; --line:#21343e; --ink:#dbe8ee; --mute:#8099a6;
+  --accent:#3bb3d3; --accent-ink:#06222b; --accent-soft:#12323c; --amber:#e8b04b; --ok:#3dd39a; --ok-soft:#10342a; --err:#ff8080; --err-soft:#3a1c1f; --warn-soft:#3a2f14;
+  --sel:#173947; --zebra:#0f1a20; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  --c-kw:#6fb3ff; --c-fn:#e3b25b; --c-str:#5fd19b; --c-num:#f29b62; --c-tbl:#5cd0d9; --c-col:#a8c2cf; --c-cm:#6d8794; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 var(--ui);overflow:hidden}
+button{font:inherit;color:inherit}
+button:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+svg.i{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+#app{height:100%;display:grid;grid-template-rows:var(--bar) minmax(0,1fr)}
+/* barra superior */
+.bar{display:flex;align-items:center;gap:16px;padding-block:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--panel);border-bottom:1px solid var(--line);min-width:0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;white-space:nowrap}
+.brand b{font-weight:600}.brand span{font-weight:400;color:var(--mute)}
+.mark{width:28px;height:28px;border-radius:7px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+.seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:2px;gap:2px}
+.seg button{border:0;background:none;padding:5px 14px;border-radius:7px;cursor:pointer;color:var(--mute);font-weight:500;display:flex;gap:7px;align-items:center}
+.seg button[aria-pressed="true"]{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.sp{flex:1}
+.chip{display:flex;align-items:center;gap:8px;font:12px var(--mono);color:var(--mute);background:var(--panel2);border:1px solid var(--line);border-radius:20px;padding:4px 12px;white-space:nowrap}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.ib{border:1px solid var(--line);background:var(--panel2);color:var(--ink);width:34px;height:34px;border-radius:8px;display:grid;place-items:center;cursor:pointer}
+.ib:hover{border-color:var(--accent)}
+.badgebtn{display:flex;gap:8px;align-items:center;border:1px solid var(--line);background:var(--panel2);border-radius:8px;height:34px;padding:0 12px;cursor:pointer;font-weight:500}
+.badgebtn:hover{border-color:var(--accent)}
+.badgebtn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.badgebtn em{font-style:normal;font:600 12px var(--mono);background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:0 7px}
+/* corpo */
+.body{display:grid;grid-template-columns:272px minmax(0,1fr) 0;min-height:0}
+.body.chal-open{grid-template-columns:272px minmax(0,1fr) 336px}
+.pane{min-height:0;min-width:0;display:flex;flex-direction:column;background:var(--panel)}
+#nav{border-right:1px solid var(--line);padding-left:env(safe-area-inset-left,0px)}
+#chal{border-left:1px solid var(--line);overflow:hidden}
+.body:not(.chal-open) #chal{display:none}
+.ph{display:flex;align-items:center;gap:8px;padding:12px 14px 8px;font:600 11px var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.ph .sp{flex:1}
+.ph button{text-transform:none;letter-spacing:0;font:500 12px var(--ui);border:1px solid var(--line);background:var(--panel2);border-radius:6px;padding:3px 8px;cursor:pointer;color:var(--ink);display:flex;gap:5px;align-items:center}
+.ph button:hover{border-color:var(--accent)}
+#filter{margin:0 12px 8px;border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:6px 10px;color:var(--ink);font:inherit;width:calc(100% - 24px)}
+#tree{flex:1;min-height:0;overflow:auto;padding:0 6px 10px}
+.tn{display:flex;align-items:center;gap:6px;width:100%;border:0;background:none;text-align:left;padding:4px 8px;border-radius:6px;cursor:pointer;color:var(--ink);font-size:13px;min-width:0}
+.tn:hover{background:var(--panel2)}
+.tn.sel{background:var(--accent-soft)}
+.tn .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.tn .ty{font:11px var(--mono);color:var(--mute);margin-left:auto;white-space:nowrap}
+.tn .ch{width:12px;color:var(--mute);transition:transform .12s}
+.tn.open .ch{transform:rotate(90deg)}
+.tn.cur .nm{font-weight:600}
+.tn.dim{color:var(--mute)}
+.tn svg.i{color:var(--mute)}
+.tn .k-pk{color:var(--amber)}.tn .k-fk{color:var(--accent)}
+.kids{margin-left:14px;border-left:1px solid var(--line);padding-left:4px}
+.tact{opacity:0;border:0;background:none;color:var(--mute);cursor:pointer;padding:2px;border-radius:4px;display:grid;place-items:center}
+.tn:hover .tact,.tn:focus-within .tact,.tact:focus-visible{opacity:1}
+.tact:hover{color:var(--accent);background:var(--accent-soft)}
+#info{border-top:1px solid var(--line);padding:10px 14px 12px;font-size:12.5px;color:var(--mute);background:var(--panel2);min-height:92px}
+#info b{color:var(--ink);font-weight:600}
+#info code{font:12px var(--mono);color:var(--ink)}
+/* centro */
+#center{background:var(--bg);min-width:0;min-height:0;display:flex;flex-direction:column}
+.view{flex:1;min-height:0;display:flex;flex-direction:column}
+.qtabs{display:flex;gap:2px;padding:8px 10px 0;overflow-x:auto;scrollbar-width:thin;background:var(--bg)}
+.qt{display:flex;align-items:center;gap:8px;padding:7px 8px 7px 14px;border:1px solid var(--line);border-bottom:0;border-radius:9px 9px 0 0;background:var(--panel2);color:var(--mute);cursor:pointer;white-space:nowrap;font-weight:500}
+.qt[aria-selected="true"]{background:var(--panel);color:var(--ink);position:relative;top:1px}
+.qt button{border:0;background:none;color:inherit;padding:2px;border-radius:4px;display:grid;place-items:center;cursor:pointer;opacity:.7}
+.qt button:hover{background:var(--line);opacity:1}
+.qadd{border:0;background:none;color:var(--mute);cursor:pointer;padding:6px 10px;border-radius:8px}
+.qadd:hover{color:var(--accent)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:0 10px 10px 10px;margin:0 10px;display:flex;flex-direction:column;min-height:0;flex:1;box-shadow:var(--shadow)}
+.tool{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.btn{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn kbd{font:11px var(--mono);opacity:.75;border:1px solid currentColor;border-radius:4px;padding:0 4px}
+.tool .vsep{width:1px;height:22px;background:var(--line);margin:0 4px}
+.sw{display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--mute);font-weight:500;user-select:none}
+.sw input{position:absolute;opacity:0;width:1px;height:1px}
+.sw i{width:32px;height:18px;border-radius:10px;background:var(--line);position:relative;transition:background .15s}
+.sw i::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--panel);transition:transform .15s}
+.sw input:checked+i{background:var(--ok)}
+.sw input:checked+i::after{transform:translateX(14px)}
+.sw input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
+.goalbar{display:none;align-items:center;gap:10px;padding:7px 12px;background:var(--accent-soft);border-bottom:1px solid var(--line);font-size:13px}
+.goalbar.on{display:flex}
+.goalbar b{color:var(--accent)}
+.goalbar .sp{flex:1}
+.goalbar button{border:1px solid var(--accent);color:var(--accent);background:none;border-radius:6px;padding:2px 9px;cursor:pointer;font-size:12px}
+/* editor */
+.edwrap{position:relative;flex:none;height:220px;min-height:90px;display:flex;background:var(--panel)}
+.gut{position:relative;flex:none;width:58px;overflow:hidden;background:var(--panel2);border-right:1px solid var(--line);font:12.5px/var(--lh) var(--mono);color:var(--mute);user-select:none}
+.gut .in{position:absolute;left:0;right:0;top:0;padding-top:8px}
+.gl{height:var(--lh);display:flex;align-items:center;justify-content:flex-end;padding-right:10px;position:relative}
+.gl .go{position:absolute;left:7px;top:2px;width:17px;height:17px;border:0;border-radius:5px;background:none;color:var(--accent);cursor:pointer;display:grid;place-items:center;padding:0;opacity:.55}
+.gl .go svg{width:12px;height:12px;fill:currentColor;stroke:none}
+.gl .go:hover{opacity:1;background:var(--accent-soft)}
+.gl.cs .go{opacity:1}
+.gl.er .go{color:var(--err);opacity:1}
+.codebox{position:relative;flex:1;min-width:0;overflow:hidden}
+.band{position:absolute;left:0;right:0;background:var(--accent-soft);opacity:.55;pointer-events:none;top:0;height:0}
+.hl,.ta{position:absolute;inset:0;margin:0;border:0;padding:8px 14px;font:13.5px/var(--lh) var(--mono);white-space:pre;tab-size:2;letter-spacing:0;word-spacing:0}
+.hl{overflow:hidden;pointer-events:none;color:var(--ink)}
+.ta{background:transparent;color:transparent;caret-color:var(--ink);resize:none;outline:none;overflow:auto;width:100%;height:100%}
+.ta::selection{background:color-mix(in srgb,var(--accent) 35%,transparent);color:transparent}
+.k{color:var(--c-kw);font-weight:500}.f{color:var(--c-fn)}.s{color:var(--c-str)}.n{color:var(--c-num)}.t{color:var(--c-tbl)}.c{color:var(--c-col)}.m{color:var(--c-cm);font-style:italic}
+.ac{position:absolute;z-index:5;min-width:200px;max-width:320px;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);padding:4px;display:none;font:12.5px var(--mono)}
+.ac.on{display:block}
+.ac div{display:flex;gap:10px;align-items:center;padding:3px 8px;border-radius:5px;cursor:pointer;white-space:nowrap}
+.ac div[aria-selected="true"]{background:var(--accent-soft)}
+.ac small{margin-left:auto;color:var(--mute);font:11px var(--ui)}
+.split{flex:none;height:9px;cursor:row-resize;background:var(--panel2);border-block:1px solid var(--line);display:grid;place-items:center;touch-action:none}
+.split::after{content:"";width:38px;height:3px;border-radius:2px;background:var(--line)}
+.split:hover::after{background:var(--accent)}
+/* resultados */
+.res{flex:1;min-height:120px;display:flex;flex-direction:column;min-width:0}
+.rtabs{display:flex;align-items:flex-end;gap:2px;padding:6px 8px 0;background:var(--panel2);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:thin}
+.rt{border:1px solid transparent;border-bottom:0;border-radius:7px 7px 0 0;background:none;color:var(--mute);padding:5px 12px;cursor:pointer;white-space:nowrap;font-weight:500;display:flex;align-items:center;gap:6px}
+.rt[aria-selected="true"]{background:var(--panel);border-color:var(--line);color:var(--ink);position:relative;top:1px}
+.rt .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}.rt .dot.bad{background:var(--err)}
+.rt .cnt{font:600 11px var(--mono);background:var(--line);border-radius:9px;padding:0 6px}
+.rbody{flex:1;min-height:0;overflow:auto;background:var(--panel)}
+.rfoot{display:flex;align-items:center;gap:12px;padding:6px 12px;border-top:1px solid var(--line);background:var(--panel2);font-size:12.5px;color:var(--mute);border-radius:0 0 10px 10px;min-height:34px}
+.rfoot .sp{flex:1}
+.rfoot button{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:2px 9px;cursor:pointer;font-size:12px;display:flex;gap:5px;align-items:center}
+.rfoot button:hover{border-color:var(--accent)}
+table.g{border-collapse:separate;border-spacing:0;font:13px var(--mono);min-width:100%}
+table.g th{position:sticky;top:0;background:var(--panel2);text-align:left;font:600 12px var(--ui);padding:7px 14px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:nowrap;z-index:1}
+table.g th small{color:var(--mute);font:11px var(--mono);margin-left:6px}
+table.g td{padding:5px 14px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);white-space:pre;max-width:420px;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+table.g td.rn,table.g th.rn{position:sticky;left:0;background:var(--panel2);color:var(--mute);text-align:right;padding:5px 10px;min-width:44px;border-right:1px solid var(--line);z-index:2}
+table.g th.rn{z-index:3}
+table.g tr:nth-child(even) td{background:var(--zebra)}
+table.g tr:nth-child(even) td.rn{background:var(--panel2)}
+table.g tr.sel td{background:var(--sel)}
+table.g td.num{text-align:right}
+table.g td.nul{color:var(--mute);font-style:italic}
+.msg{display:flex;gap:12px;align-items:flex-start;margin:14px;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2)}
+.msg.ok{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 40%,transparent)}
+.msg.bad{background:var(--err-soft);border-color:color-mix(in srgb,var(--err) 45%,transparent)}
+.msg svg.i{width:20px;height:20px;margin-top:1px}
+.msg.ok svg.i{color:var(--ok)}.msg.bad svg.i{color:var(--err)}
+.msg h4{margin:0 0 2px;font-size:14px}
+.msg p{margin:0;color:var(--ink)}
+.msg code{display:block;margin-top:8px;font:12.5px var(--mono);color:var(--mute);white-space:pre-wrap;word-break:break-word}
+.empty{display:grid;place-items:center;height:100%;color:var(--mute);padding:20px;text-align:center}
+table.out{width:100%;border-collapse:collapse;font-size:12.5px}
+table.out th{position:sticky;top:0;background:var(--panel2);text-align:left;padding:6px 10px;font-weight:600;border-bottom:1px solid var(--line)}
+table.out td{padding:6px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.out td.q{font-family:var(--mono);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.out .st{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;color:#fff;background:var(--ok)}
+table.out .st.bad{background:var(--err)}
+table.out .st svg{width:11px;height:11px;stroke-width:2.4}
+table.out button{border:1px solid var(--line);background:var(--panel2);border-radius:5px;padding:1px 8px;cursor:pointer;font-size:11.5px}
+table.out button:hover{border-color:var(--accent)}
+/* diagrama */
+.eer{flex:1;min-height:0;margin:8px 10px 10px;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:var(--shadow)}
+.eerbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:9px 12px;border-bottom:1px solid var(--line);font-size:13px}
+.eerbar h3{margin:0;font-size:14px;font-weight:600}
+.leg{display:flex;gap:14px;color:var(--mute);font-size:12.5px;flex-wrap:wrap}
+.leg span{display:flex;gap:5px;align-items:center}
+.eerbox{flex:1;min-height:0;overflow:auto;background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:20px 20px;background-color:var(--panel2);touch-action:pan-x pan-y}
+#eersvg{display:block;user-select:none}
+#eersvg .tb{fill:var(--panel);stroke:var(--line);stroke-width:1.2}
+#eersvg .th{fill:var(--accent)}
+#eersvg .tt{fill:var(--accent-ink);font:600 13px var(--ui)}
+#eersvg .tr{font:12.5px var(--mono);fill:var(--ink)}
+#eersvg .ty{font:11.5px var(--mono);fill:var(--mute)}
+#eersvg .rl{stroke:var(--line);stroke-width:1}
+#eersvg .edge{fill:none;stroke:var(--accent);stroke-width:1.8}
+#eersvg .ed{stroke:var(--accent);stroke-width:1.8;fill:none}
+#eersvg .pk{fill:var(--amber)}#eersvg .fk{fill:var(--accent)}
+#eersvg g.tbl{cursor:grab}
+#eersvg g.tbl.drag{cursor:grabbing}
+#eersvg g.tbl:hover .tb{stroke:var(--accent)}
+/* desafios */
+#chal .list{flex:1;min-height:0;overflow:auto;padding:0 10px 14px}
+.prog{margin:0 14px 10px;height:6px;border-radius:4px;background:var(--line);overflow:hidden}
+.prog b{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
+.lv{font:600 11px var(--ui);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin:14px 4px 6px}
+.cc{border:1px solid var(--line);border-radius:10px;margin-bottom:6px;background:var(--panel);overflow:hidden}
+.cc.act{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.cc>button{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;padding:9px 10px;cursor:pointer}
+.cc .no{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font:600 11px var(--mono);color:var(--mute);flex:none}
+.cc.done .no{background:var(--ok);border-color:var(--ok);color:#fff}
+.cc.done .no svg{width:13px;height:13px;stroke-width:2.6}
+.cc .tt{font-weight:500;flex:1;min-width:0}
+.cb{padding:0 12px 12px 44px;font-size:13px}
+.cb p{margin:0 0 8px}
+.cb .row{display:flex;gap:6px;flex-wrap:wrap}
+.cb .row button{border:1px solid var(--line);background:var(--panel2);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px}
+.cb .row button:hover{border-color:var(--accent)}
+.cb pre{margin:8px 0 0;padding:8px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;font:12px var(--mono);white-space:pre-wrap;word-break:break-word}
+.cb .hint{color:var(--mute);margin-top:8px}
+/* ajuda e aviso */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:500;opacity:0;pointer-events:none;transition:all .25s;z-index:50;max-width:90vw;box-shadow:var(--shadow)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.ov{position:fixed;inset:0;background:rgba(5,15,20,.55);display:none;place-items:center;z-index:40;padding:16px}
+.ov.on{display:grid}
+.dlg{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-width:640px;width:100%;max-height:88vh;overflow:auto;padding:20px 24px;box-shadow:var(--shadow)}
+.dlg h2{margin:0 0 4px;font-size:19px}
+.dlg h3{margin:18px 0 6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.dlg p{margin:0 0 6px;color:var(--mute)}
+.dlg table{border-collapse:collapse;width:100%;font-size:13px}
+.dlg td{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.dlg td:first-child{font-family:var(--mono);white-space:nowrap;padding-right:16px;color:var(--ink)}
+.dlg td:last-child{color:var(--mute)}
+.mtabs{display:none}
+@media (max-width:1180px){.body.chal-open{grid-template-columns:272px minmax(0,1fr) 0}.body.chal-open #chal{position:fixed;right:0;top:var(--bar);bottom:0;width:min(360px,100vw);z-index:20;display:flex;box-shadow:var(--shadow)}}
+@media (max-width:900px){
+  body{overflow:hidden}
+  #app{grid-template-rows:var(--bar) minmax(0,1fr) 54px}
+  .body,.body.chal-open{display:block;position:relative}
+  .body>.pane{position:absolute;inset:0;display:none;width:auto}
+  body[data-pane="nav"] #nav{display:flex}
+  body[data-pane="sql"] #center{display:flex}
+  body[data-pane="chal"] #chal,body[data-pane="chal"] .body:not(.chal-open) #chal{display:flex;position:absolute;width:auto;box-shadow:none}
+  .seg,.chip,.badgebtn{display:none}
+  .mtabs{display:flex;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .mtabs button{flex:1;border:0;background:none;color:var(--mute);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11.5px;font-weight:500;cursor:pointer}
+  .mtabs button[aria-pressed="true"]{color:var(--accent)}
+  #chal-close{display:none}
+  .tool .btn kbd{display:none}
+  .tool .btn .lbl{display:none}
+  .tool .btn{padding:6px 10px}
+  .edwrap{height:170px}
+  #nav{border-right:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<symbol id="i-db" viewBox="0 0 16 16"><ellipse cx="8" cy="3.5" rx="5.5" ry="2"/><path d="M2.5 3.5v9c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-9M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2"/></symbol>
+<symbol id="i-tbl" viewBox="0 0 16 16"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M2 6.5h12M2 10h12M6.5 6.5v7"/></symbol>
+<symbol id="i-key" viewBox="0 0 16 16"><circle cx="5" cy="10.5" r="2.7"/><path d="M7 8.6 13 2.7M10.7 5l1.8 1.8"/></symbol>
+<symbol id="i-fk" viewBox="0 0 16 16"><path d="M8 2l5 6-5 6-5-6z"/></symbol>
+<symbol id="i-col" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.2"/></symbol>
+<symbol id="i-chev" viewBox="0 0 16 16"><path d="M6 3.5 10.5 8 6 12.5"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 16 16"><path d="M9 1.5 3.5 9H8l-1 5.5L12.5 7H8z"/></symbol>
+<symbol id="i-fmt" viewBox="0 0 16 16"><path d="M2.5 4h11M2.5 8h7M2.5 12h11"/></symbol>
+<symbol id="i-trash" viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5"/></symbol>
+<symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+<symbol id="i-x" viewBox="0 0 16 16"><path d="M4 4l8 8M12 4l-8 8"/></symbol>
+<symbol id="i-check" viewBox="0 0 16 16"><path d="M3 8.5 6.5 12 13 4.5"/></symbol>
+<symbol id="i-warn" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 4.8v3.8M8 11v.2"/></symbol>
+<symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 5.5V4A1.5 1.5 0 0 0 9 2.5H4A1.5 1.5 0 0 0 2.5 4v5A1.5 1.5 0 0 0 4 10.5h1.5"/></symbol>
+<symbol id="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.8"/><path d="M8 1.5v1.7M8 12.8v1.7M1.5 8h1.7M12.8 8h1.7M3.4 3.4l1.2 1.2M11.4 11.4l1.2 1.2M12.6 3.4l-1.2 1.2M4.6 11.4l-1.2 1.2"/></symbol>
+<symbol id="i-help" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M6.2 6.3a1.9 1.9 0 1 1 2.6 1.8c-.5.3-.8.6-.8 1.2M8 11.5v.2"/></symbol>
+<symbol id="i-code" viewBox="0 0 16 16"><path d="M5.5 4 2 8l3.5 4M10.5 4 14 8l-3.5 4"/></symbol>
+<symbol id="i-eer" viewBox="0 0 16 16"><rect x="1.8" y="2.5" width="5" height="4.5" rx="1"/><rect x="9.2" y="9" width="5" height="4.5" rx="1"/><path d="M6.8 4.7h3.4v4.3"/></symbol>
+<symbol id="i-flag" viewBox="0 0 16 16"><path d="M3.5 14V2.5M3.5 3h8l-1.8 2.8L11.5 8.5h-8"/></symbol>
+<symbol id="i-reset" viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.6-3.7M3 2.5v3h3"/></symbol>
+<symbol id="i-play" viewBox="0 0 16 16"><path d="M4.5 2.5v11l9-5.5z"/></symbol>
+</defs></svg>
+
+<div id="app">
+  <header class="bar">
+    <div class="brand"><div class="mark"><svg class="i"><use href="#i-db"/></svg></div><div><b>SQL Lab</b> <span>Workbench</span></div></div>
+    <div class="seg" role="group" aria-label="Área de trabalho">
+      <button id="seg-sql" aria-pressed="true"><svg class="i"><use href="#i-code"/></svg>Consulta</button>
+      <button id="seg-eer" aria-pressed="false"><svg class="i"><use href="#i-eer"/></svg>Diagrama</button>
+    </div>
+    <div class="sp"></div>
+    <div class="chip" title="Conexão simulada, só no seu navegador"><i></i><span id="chip-db">loja_games</span> · MySQL 8.0</div>
+    <button class="badgebtn" id="btn-chal" aria-pressed="false"><svg class="i"><use href="#i-flag"/></svg>Desafios <em id="chal-n">0/23</em></button>
+    <button class="ib" id="btn-theme" aria-label="Alternar tema claro e escuro"><svg class="i"><use href="#i-sun"/></svg></button>
+    <button class="ib" id="btn-help" aria-label="Ajuda e atalhos"><svg class="i"><use href="#i-help"/></svg></button>
+  </header>
+
+  <div class="body" id="body">
+    <aside class="pane" id="nav" aria-label="Navegador de tabelas">
+      <div class="ph">Navegador <span class="sp"></span><button id="btn-reset" title="Volta o banco ao estado das 40 etapas"><svg class="i"><use href="#i-reset"/></svg>Restaurar</button></div>
+      <input id="filter" type="search" placeholder="Filtrar tabelas e colunas" aria-label="Filtrar objetos">
+      <div class="ph" style="padding-top:4px">Schemas</div>
+      <div id="tree" role="tree"></div>
+      <div id="info"></div>
+    </aside>
+
+    <main class="pane" id="center">
+      <section class="view" id="v-sql">
+        <div class="qtabs" id="qtabs" role="tablist" aria-label="Consultas"></div>
+        <div class="card">
+          <div class="tool">
+            <button class="btn pri" id="b-run" title="Executa a instrução onde o cursor está (ou o trecho selecionado)"><svg class="i" style="fill:currentColor;stroke:none"><use href="#i-bolt"/></svg>Executar <kbd>Ctrl+Enter</kbd></button>
+            <button class="btn" id="b-all" title="Executa todas as instruções do editor (Ctrl+Shift+Enter)"><svg class="i"><use href="#i-play"/></svg>Executar tudo</button>
+            <span class="vsep"></span>
+            <button class="btn" id="b-fmt" aria-label="Formatar" title="Organiza o texto e coloca as palavras do SQL em maiúsculas"><svg class="i"><use href="#i-fmt"/></svg><span class="lbl">Formatar</span></button>
+            <button class="btn" id="b-clr" aria-label="Limpar" title="Apaga o texto desta aba"><svg class="i"><use href="#i-trash"/></svg><span class="lbl">Limpar</span></button>
+            <span class="vsep"></span>
+            <label class="sw" title="Como no Workbench: UPDATE e DELETE só rodam com WHERE em uma coluna-chave (como id)"><input type="checkbox" id="safe"><i></i>Modo seguro</label>
+          </div>
+          <div class="goalbar" id="goalbar"></div>
+          <div class="edwrap" id="edwrap">
+            <div class="gut" id="gut"><div class="in" id="gutin"></div></div>
+            <div class="codebox" id="codebox">
+              <div class="band" id="band"></div>
+              <pre class="hl" id="hl" aria-hidden="true"></pre>
+              <textarea class="ta" id="ta" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" wrap="off" aria-label="Editor SQL"></textarea>
+              <div class="ac" id="ac" role="listbox"></div>
+            </div>
+          </div>
+          <div class="split" id="split" role="separator" aria-orientation="horizontal" aria-label="Ajustar altura do editor"></div>
+          <div class="res">
+            <div class="rtabs" id="rtabs" role="tablist"></div>
+            <div class="rbody" id="rbody"></div>
+            <div class="rfoot" id="rfoot"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="v-eer" hidden>
+        <div class="eer">
+          <div class="eerbar">
+            <h3>Diagrama das tabelas <span id="eer-db" style="color:var(--mute);font-weight:400"></span></h3>
+            <div class="leg"><span><svg class="i" style="color:var(--amber);fill:var(--amber);stroke:none;width:13px"><use href="#i-key"/></svg>chave primária</span><span><svg class="i" style="color:var(--accent);fill:var(--accent);stroke:none;width:13px"><use href="#i-fk"/></svg>chave estrangeira</span><span>1 ━━ ⋔ um para muitos</span></div>
+            <span class="sp" style="flex:1"></span>
+            <button class="btn" id="z-out" aria-label="Diminuir"><svg class="i"><use href="#i-x" style="display:none"/><path d="M3 8h10"/></svg></button>
+            <button class="btn" id="z-in" aria-label="Aumentar"><svg class="i"><path d="M8 3v10M3 8h10"/></svg></button>
+            <button class="btn" id="z-reset">Reorganizar</button>
+          </div>
+          <div class="eerbox" id="eerbox"><svg id="eersvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagrama de entidade e relacionamento"></svg></div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="pane" id="chal" aria-label="Desafios">
+      <div class="ph">Desafios <span class="sp"></span><button id="chal-close" aria-label="Fechar painel"><svg class="i"><use href="#i-x"/></svg></button></div>
+      <div class="prog" aria-hidden="true"><b id="prog"></b></div>
+      <div class="list" id="chlist"></div>
+    </aside>
+  </div>
+  <nav class="mtabs" aria-label="Seções">
+    <button data-p="nav" aria-pressed="false"><svg class="i"><use href="#i-db"/></svg>Tabelas</button>
+    <button data-p="sql" aria-pressed="true"><svg class="i"><use href="#i-code"/></svg>Consulta</button>
+    <button data-p="eer" aria-pressed="false"><svg class="i"><use href="#i-eer"/></svg>Diagrama</button>
+    <button data-p="chal" aria-pressed="false"><svg class="i"><use href="#i-flag"/></svg>Desafios</button>
+  </nav>
+</div>
+
+<div class="ov" id="ov-help"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="h-t">
+  <h2 id="h-t">Como usar o SQL Lab Workbench</h2>
+  <p>Um simulador do MySQL Workbench, rodando só no seu navegador. O banco <b>loja_games</b> já vem pronto, com o resultado das 40 etapas.</p>
+  <h3>Atalhos</h3>
+  <table><tr><td>Ctrl + Enter</td><td>Executa a instrução onde o cursor está (ou o trecho selecionado)</td></tr>
+  <tr><td>Ctrl + Shift + Enter</td><td>Executa todas as instruções da aba</td></tr>
+  <tr><td>Ctrl + /</td><td>Comenta ou descomenta as linhas selecionadas</td></tr>
+  <tr><td>Tab / Enter</td><td>Aceita a sugestão de autocompletar (Esc fecha)</td></tr>
+  <tr><td>Clique duplo na tabela</td><td>Abre <code>SELECT * FROM tabela</code> e executa</td></tr></table>
+  <h3>Para começar</h3>
+  <table><tr><td>SHOW TABLES;</td><td>lista as tabelas do banco</td></tr>
+  <tr><td>DESCRIBE jogos;</td><td>mostra as colunas de uma tabela</td></tr>
+  <tr><td>SELECT * FROM jogos;</td><td>mostra todas as linhas</td></tr>
+  <tr><td>USE loja_games;</td><td>escolhe o banco de trabalho</td></tr></table>
+  <h3>Boas práticas</h3>
+  <p>Termine cada comando com <b>;</b> e escreva textos entre aspas simples. Se aparecer um erro vermelho, leia a mensagem: ela diz o que o banco não entendeu. O botão <b>Restaurar</b> devolve o banco ao estado original.</p>
+  <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn pri" id="h-ok">Entendi</button></div>
+</div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+/* Motor SQL simplificado (dialeto MySQL) para o SQL Lab Workbench */
+(function (root) {
+'use strict';
+class SqlError extends Error { constructor(code, state, msg) { super(msg); this.code = code; this.state = state; } }
+const err = (c, s, m) => new SqlError(c, s, m);
+
+const RESERVED = new Set('SELECT FROM WHERE GROUP HAVING ORDER LIMIT JOIN INNER LEFT RIGHT OUTER CROSS ON AS AND OR NOT IN IS NULL LIKE BETWEEN SET VALUES INTO INSERT UPDATE DELETE CREATE DROP ALTER TABLE DATABASE USE UNION DISTINCT ASC DESC CASE WHEN THEN ELSE END USING OFFSET BY'.split(' '));
+
+/* ---------- tokenizador ---------- */
+function synErr(src, pos, eof) {
+  const line = src.slice(0, pos).split('\n').length;
+  if (eof) return err(1064, '42000', `Erro de sintaxe: o comando terminou antes da hora (linha ${line}). Falta alguma coisa no final?`);
+  const near = src.slice(pos).split('\n')[0].slice(0, 40);
+  return err(1064, '42000', `Erro de sintaxe perto de '${near}' (linha ${line}). Confira vírgulas, parênteses, aspas e a ordem das palavras.`);
+}
+function tokenize(src) {
+  const T = []; let i = 0; const n = src.length;
+  const numRe = /(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?/y;
+  while (i < n) {
+    const c = src[i];
+    if (/\s/.test(c)) { i++; continue; }
+    if (c === '#' || (c === '-' && src[i + 1] === '-' && (i + 2 >= n || /\s/.test(src[i + 2])))) { while (i < n && src[i] !== '\n') i++; continue; }
+    if (c === '/' && src[i + 1] === '*') { const e = src.indexOf('*/', i + 2); i = e < 0 ? n : e + 2; continue; }
+    const st = i;
+    if (c === "'" || c === '"') {
+      let s = ''; i++; let ok = false;
+      while (i < n) {
+        const d = src[i];
+        if (d === '\\' && i + 1 < n) { const e = src[i + 1]; s += e === 'n' ? '\n' : e === 't' ? '\t' : e === '0' ? '\0' : e; i += 2; continue; }
+        if (d === c) { if (src[i + 1] === c) { s += c; i += 2; continue; } i++; ok = true; break; }
+        s += d; i++;
+      }
+      if (!ok) throw err(1064, '42000', `Aspas abertas e nunca fechadas, a partir de ${src.slice(st, st + 20)}. Todo texto precisa de aspas no começo e no fim.`);
+      T.push({ t: 'str', v: s, pos: st, end: i }); continue;
+    }
+    if (c === '`') {
+      const e = src.indexOf('`', i + 1); if (e < 0) throw synErr(src, i);
+      T.push({ t: 'qid', v: src.slice(i + 1, e), pos: st, end: e + 1 }); i = e + 1; continue;
+    }
+    if (/[0-9]/.test(c) || (c === '.' && /[0-9]/.test(src[i + 1] || ''))) {
+      numRe.lastIndex = i; const m = numRe.exec(src); const raw = m[0];
+      const dot = raw.indexOf('.'); const sc = (dot >= 0 && !/[eE]/.test(raw)) ? raw.length - dot - 1 : null;
+      T.push({ t: 'num', v: parseFloat(raw), scale: sc, pos: st, end: i + raw.length }); i += raw.length; continue;
+    }
+    if (/[A-Za-z_À-￿]/.test(c)) {
+      let j = i + 1; while (j < n && /[A-Za-z0-9_$À-￿]/.test(src[j])) j++;
+      T.push({ t: 'id', v: src.slice(i, j), pos: st, end: j }); i = j; continue;
+    }
+    const two = src.slice(i, i + 2);
+    if (two === '<=' || two === '>=' || two === '<>' || two === '!=') { T.push({ t: 'op', v: two === '!=' ? '<>' : two, pos: st, end: i + 2 }); i += 2; continue; }
+    if ('(),.;*+-/%=<>'.indexOf(c) >= 0) { T.push({ t: 'op', v: c, pos: st, end: i + 1 }); i++; continue; }
+    throw synErr(src, i);
+  }
+  T.push({ t: 'eof', pos: n, end: n });
+  return T;
+}
+
+/* divide o texto do editor em instruções (tolerante a texto incompleto) */
+function split(text) {
+  const out = []; let i = 0, st = 0; const n = text.length;
+  const push = (a, b) => {
+    const seg = text.slice(a, b); let s = a;
+    for (;;) {
+      while (s < b && /\s/.test(text[s])) s++;
+      if (text[s] === '#' || (text[s] === '-' && text[s + 1] === '-')) { while (s < b && text[s] !== '\n') s++; }
+      else if (text[s] === '/' && text[s + 1] === '*') { const e = text.indexOf('*/', s + 2); s = e < 0 || e + 2 > b ? b : e + 2; }
+      else break;
+    }
+    let empty = true; try { empty = tokenize(seg).filter(t => !(t.t === 'op' && t.v === ';') && t.t !== 'eof').length === 0; } catch (e) { empty = false; }
+    if (!empty) out.push({ text: text.slice(s, b), start: s, end: b });
+  };
+  while (i < n) {
+    const c = text[i];
+    if (c === "'" || c === '"' || c === '`') { i++; while (i < n && text[i] !== c) { if (text[i] === '\\' && c !== '`') i++; i++; } i++; continue; }
+    if (c === '#' || (c === '-' && text[i + 1] === '-')) { while (i < n && text[i] !== '\n') i++; continue; }
+    if (c === '/' && text[i + 1] === '*') { const e = text.indexOf('*/', i + 2); i = e < 0 ? n : e + 2; continue; }
+    if (c === ';') { push(st, i + 1); st = i + 1; }
+    i++;
+  }
+  if (st < n) push(st, n);
+  return out;
+}
+
+/* ---------- analisador ---------- */
+class Parser {
+  constructor(src) { this.src = src; this.t = tokenize(src); this.i = 0; }
+  get cur() { return this.t[this.i]; }
+  fail(tok) { tok = tok || this.cur; throw synErr(this.src, tok.pos, tok.t === 'eof'); }
+  kw(w, off) { const k = this.t[this.i + (off || 0)]; return !!k && k.t === 'id' && k.v.toUpperCase() === w; }
+  eatKw(w) { if (this.kw(w)) { this.i++; return true; } return false; }
+  needKw(w) { if (!this.eatKw(w)) this.fail(); }
+  op(o, off) { const k = this.t[this.i + (off || 0)]; return !!k && k.t === 'op' && k.v === o; }
+  eatOp(o) { if (this.op(o)) { this.i++; return true; } return false; }
+  needOp(o) { if (!this.eatOp(o)) this.fail(); }
+  ident() {
+    const k = this.cur;
+    if (k.t === 'qid') { this.i++; return k.v; }
+    if (k.t === 'id' && !RESERVED.has(k.v.toUpperCase())) { this.i++; return k.v; }
+    this.fail();
+  }
+  statement() {
+    const k = this.cur; if (k.t !== 'id') this.fail();
+    const w = k.v.toUpperCase(); let s;
+    switch (w) {
+      case 'SELECT': s = this.select(); break;
+      case 'INSERT': s = this.insert(); break;
+      case 'UPDATE': s = this.update(); break;
+      case 'DELETE': s = this.del(); break;
+      case 'CREATE': s = this.create(); break;
+      case 'DROP': s = this.drop(); break;
+      case 'ALTER': s = this.alter(); break;
+      case 'SHOW': s = this.show(); break;
+      case 'DESCRIBE': case 'DESC': case 'EXPLAIN': this.i++; s = { k: 'describe', tbl: this.tref().name, db: this.lastDb }; break;
+      case 'USE': this.i++; s = { k: 'use', db: this.ident() }; break;
+      case 'TRUNCATE': this.i++; this.eatKw('TABLE'); { const t = this.tref(); s = { k: 'truncate', tbl: t.name, db: t.db }; } break;
+      default: throw err(1064, '42000', `Comando '${k.v}' não existe ou ainda não é suportado neste simulador. Tente SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, SHOW, DESCRIBE ou USE.`);
+    }
+    this.eatOp(';');
+    if (this.cur.t !== 'eof') this.fail();
+    return s;
+  }
+  tref() { let a = this.ident(); this.lastDb = null; if (this.eatOp('.')) { this.lastDb = a; a = this.ident(); } return { db: this.lastDb, name: a }; }
+  /* ----- expressões ----- */
+  expr() { return this.or(); }
+  or() { let l = this.and(); while (this.eatKw('OR')) l = { k: 'bin', op: 'OR', l, r: this.and() }; return l; }
+  and() { let l = this.not(); while (this.eatKw('AND')) l = { k: 'bin', op: 'AND', l, r: this.not() }; return l; }
+  not() { if (this.eatKw('NOT')) return { k: 'not', e: this.not() }; return this.cmp(); }
+  cmp() {
+    const l = this.add(); const k = this.cur;
+    if (k.t === 'op' && ['=', '<>', '<', '>', '<=', '>='].includes(k.v)) { this.i++; return { k: 'bin', op: k.v, l, r: this.add() }; }
+    if (this.eatKw('IS')) {
+      const neg = this.eatKw('NOT');
+      if (this.eatKw('NULL')) return { k: 'isnull', e: l, neg };
+      if (this.eatKw('TRUE')) return { k: 'istf', e: l, v: 1, neg };
+      if (this.eatKw('FALSE')) return { k: 'istf', e: l, v: 0, neg };
+      this.fail();
+    }
+    let neg = false;
+    if (this.kw('NOT') && (this.kw('IN', 1) || this.kw('BETWEEN', 1) || this.kw('LIKE', 1))) { this.i++; neg = true; }
+    if (this.eatKw('IN')) {
+      this.needOp('(');
+      if (this.kw('SELECT')) { const sel = this.select(); this.needOp(')'); return { k: 'in', e: l, sub: sel, neg }; }
+      const list = [this.expr()]; while (this.eatOp(',')) list.push(this.expr()); this.needOp(')');
+      return { k: 'in', e: l, list, neg };
+    }
+    if (this.eatKw('BETWEEN')) { const a = this.add(); this.needKw('AND'); const b = this.add(); return { k: 'between', e: l, a, b, neg }; }
+    if (this.eatKw('LIKE')) return { k: 'like', e: l, p: this.add(), neg };
+    return l;
+  }
+  add() { let l = this.mul(); for (;;) { const k = this.cur; if (k.t === 'op' && (k.v === '+' || k.v === '-')) { this.i++; l = { k: 'bin', op: k.v, l, r: this.mul() }; } else return l; } }
+  mul() {
+    let l = this.unary();
+    for (;;) {
+      const k = this.cur;
+      if (k.t === 'op' && (k.v === '*' || k.v === '/' || k.v === '%')) { this.i++; l = { k: 'bin', op: k.v, l, r: this.unary() }; }
+      else if (this.kw('DIV') || this.kw('MOD')) { const op = this.cur.v.toUpperCase(); this.i++; l = { k: 'bin', op: op === 'MOD' ? '%' : 'DIV', l, r: this.unary() }; }
+      else return l;
+    }
+  }
+  unary() { if (this.eatOp('-')) return { k: 'neg', e: this.unary() }; if (this.eatOp('+')) return this.unary(); return this.primary(); }
+  primary() {
+    const k = this.cur;
+    if (k.t === 'num') { this.i++; return { k: 'num', v: k.v, scale: k.scale }; }
+    if (k.t === 'str') { this.i++; return { k: 'str', v: k.v }; }
+    if (k.t === 'op' && k.v === '(') {
+      this.i++;
+      if (this.kw('SELECT')) { const sel = this.select(); this.needOp(')'); return { k: 'sub', sel }; }
+      const e = this.expr(); this.needOp(')'); return e;
+    }
+    if (k.t === 'qid') { this.i++; return this.colRest(k.v); }
+    if (k.t === 'id') {
+      const w = k.v.toUpperCase();
+      if (w === 'NULL') { this.i++; return { k: 'null' }; }
+      if (w === 'TRUE') { this.i++; return { k: 'num', v: 1, scale: null }; }
+      if (w === 'FALSE') { this.i++; return { k: 'num', v: 0, scale: null }; }
+      if (w === 'DEFAULT' && !this.op('(', 1)) { this.i++; return { k: 'default' }; }
+      if (w === 'CASE') return this.caseExpr();
+      if (this.op('(', 1)) return this.func();
+      if (RESERVED.has(w)) this.fail();
+      this.i++; return this.colRest(k.v);
+    }
+    this.fail();
+  }
+  colRest(name) {
+    if (this.op('.') && (this.t[this.i + 1].t === 'id' || this.t[this.i + 1].t === 'qid')) {
+      this.i++; const c = this.t[this.i++].v;
+      if (this.op('.') && (this.t[this.i + 1].t === 'id' || this.t[this.i + 1].t === 'qid')) { this.i++; const c2 = this.t[this.i++].v; return { k: 'col', t: c, c: c2 }; }
+      return { k: 'col', t: name, c };
+    }
+    return { k: 'col', t: null, c: name };
+  }
+  caseExpr() {
+    this.needKw('CASE'); let base = null; if (!this.kw('WHEN')) base = this.expr();
+    const whens = []; while (this.eatKw('WHEN')) { const c = this.expr(); this.needKw('THEN'); whens.push([c, this.expr()]); }
+    if (!whens.length) this.fail();
+    let els = null; if (this.eatKw('ELSE')) els = this.expr(); this.needKw('END');
+    return { k: 'case', base, whens, els };
+  }
+  func() {
+    const name = this.cur.v.toUpperCase(); this.i += 2;
+    const f = { k: 'fn', name, args: [], star: false, distinct: false };
+    if (this.eatOp(')')) return f;
+    if (this.op('*') && name === 'COUNT') { this.i++; f.star = true; this.needOp(')'); return f; }
+    if (this.eatKw('DISTINCT')) f.distinct = true;
+    f.args.push(this.expr()); while (this.eatOp(',')) f.args.push(this.expr());
+    this.needOp(')'); return f;
+  }
+  /* ----- SELECT ----- */
+  select() {
+    this.needKw('SELECT'); const s = { k: 'select', distinct: false, cols: [], from: null, joins: [], where: null, group: [], having: null, order: [], limit: null, offset: 0 };
+    if (this.eatKw('DISTINCT')) s.distinct = true; else this.eatKw('ALL');
+    for (;;) {
+      if (this.op('*')) { this.i++; s.cols.push({ star: true }); }
+      else if ((this.cur.t === 'id' || this.cur.t === 'qid') && this.op('.', 1) && this.op('*', 2)) { const t = this.cur.v; this.i += 3; s.cols.push({ star: true, t }); }
+      else {
+        const a = this.cur.pos; const e = this.expr(); const text = this.src.slice(a, this.t[this.i - 1].end); let alias = null;
+        if (this.eatKw('AS')) { alias = this.cur.t === 'str' ? this.t[this.i++].v : this.ident(); }
+        else if (this.cur.t === 'str') alias = this.t[this.i++].v;
+        else if (this.cur.t === 'qid' || (this.cur.t === 'id' && !RESERVED.has(this.cur.v.toUpperCase()))) alias = this.ident();
+        s.cols.push({ e, alias, text });
+      }
+      if (!this.eatOp(',')) break;
+    }
+    if (this.eatKw('FROM')) {
+      s.from = this.source();
+      for (;;) {
+        if (this.eatOp(',')) { s.joins.push({ type: 'CROSS', src: this.source(), on: null }); continue; }
+        let type = null;
+        if (this.eatKw('INNER')) type = 'INNER'; else if (this.eatKw('CROSS')) type = 'CROSS';
+        else if (this.eatKw('LEFT')) { this.eatKw('OUTER'); type = 'LEFT'; } else if (this.eatKw('RIGHT')) { this.eatKw('OUTER'); type = 'RIGHT'; }
+        if (type && !this.kw('JOIN')) this.fail();
+        if (!this.eatKw('JOIN')) { if (type) this.fail(); break; }
+        const src = this.source(); let on = null, using = null;
+        if (this.eatKw('ON')) on = this.expr();
+        else if (this.eatKw('USING')) { this.needOp('('); using = [this.ident()]; while (this.eatOp(',')) using.push(this.ident()); this.needOp(')'); }
+        s.joins.push({ type: type || 'INNER', src, on, using });
+      }
+    }
+    if (this.eatKw('WHERE')) s.where = this.expr();
+    if (this.eatKw('GROUP')) { this.needKw('BY'); s.group.push(this.expr()); while (this.eatOp(',')) s.group.push(this.expr()); }
+    if (this.eatKw('HAVING')) s.having = this.expr();
+    if (this.eatKw('ORDER')) { this.needKw('BY'); do { const e = this.expr(); let dir = 1; if (this.eatKw('DESC')) dir = -1; else this.eatKw('ASC'); s.order.push({ e, dir }); } while (this.eatOp(',')); }
+    if (this.eatKw('LIMIT')) {
+      const a = this.cur; if (a.t !== 'num') this.fail(); this.i++;
+      if (this.eatOp(',')) { const b = this.cur; if (b.t !== 'num') this.fail(); this.i++; s.offset = a.v; s.limit = b.v; }
+      else { s.limit = a.v; if (this.eatKw('OFFSET')) { const b = this.cur; if (b.t !== 'num') this.fail(); this.i++; s.offset = b.v; } }
+    }
+    if (this.kw('UNION')) throw err(1064, '42000', 'UNION ainda não é suportado neste simulador.');
+    return s;
+  }
+  source() {
+    if (this.op('(')) {
+      this.i++; const sel = this.select(); this.needOp(')'); this.eatKw('AS');
+      const alias = this.ident(); return { sub: sel, alias };
+    }
+    const r = this.tref(); let alias = null;
+    if (this.eatKw('AS')) alias = this.ident(); else if (this.cur.t === 'qid' || (this.cur.t === 'id' && !RESERVED.has(this.cur.v.toUpperCase()))) alias = this.ident();
+    return { db: r.db, name: r.name, alias };
+  }
+  /* ----- DML ----- */
+  insert() {
+    this.needKw('INSERT'); this.eatKw('INTO'); const r = this.tref(); let cols = null;
+    if (this.op('(') && !this.kw('SELECT', 1)) { this.i++; cols = [this.ident()]; while (this.eatOp(',')) cols.push(this.ident()); this.needOp(')'); }
+    if (this.kw('SELECT')) return { k: 'insert', db: r.db, tbl: r.name, cols, sel: this.select() };
+    if (!this.eatKw('VALUES') && !this.eatKw('VALUE')) this.fail();
+    const rows = [];
+    do { this.needOp('('); const row = []; if (!this.op(')')) { row.push(this.expr()); while (this.eatOp(',')) row.push(this.expr()); } this.needOp(')'); rows.push(row); } while (this.eatOp(','));
+    return { k: 'insert', db: r.db, tbl: r.name, cols, rows };
+  }
+  update() {
+    this.needKw('UPDATE'); const r = this.tref(); this.needKw('SET'); const sets = [];
+    do { const c = this.ident(); this.needOp('='); sets.push({ c, e: this.expr() }); } while (this.eatOp(','));
+    let where = null; if (this.eatKw('WHERE')) where = this.expr();
+    return { k: 'update', db: r.db, tbl: r.name, sets, where };
+  }
+  del() {
+    this.needKw('DELETE'); this.needKw('FROM'); const r = this.tref(); let where = null; if (this.eatKw('WHERE')) where = this.expr();
+    return { k: 'delete', db: r.db, tbl: r.name, where };
+  }
+  /* ----- DDL ----- */
+  colType() {
+    const k = this.cur; if (k.t !== 'id') this.fail(); const w = k.v.toUpperCase(); this.i++;
+    const map = { INT: 'int', INTEGER: 'int', BIGINT: 'int', SMALLINT: 'int', TINYINT: 'int', MEDIUMINT: 'int', DECIMAL: 'decimal', NUMERIC: 'decimal', DEC: 'decimal', FLOAT: 'float', DOUBLE: 'float', REAL: 'float', VARCHAR: 'varchar', CHAR: 'char', TEXT: 'text', DATE: 'date', DATETIME: 'datetime', TIMESTAMP: 'datetime', BOOLEAN: 'bool', BOOL: 'bool' };
+    if (!map[w]) throw err(1064, '42000', `Tipo de coluna '${k.v}' desconhecido. Exemplos: INT, VARCHAR(40), DECIMAL(6,2), DATE, TEXT.`);
+    const c = { type: map[w], raw: w, len: null, prec: null, scale: null };
+    if (this.eatOp('(')) { const a = this.cur; if (a.t !== 'num') this.fail(); this.i++; if (c.type === 'decimal') { c.prec = a.v; c.scale = 0; } else c.len = a.v; if (this.eatOp(',')) { const b = this.cur; if (b.t !== 'num') this.fail(); this.i++; c.scale = b.v; } this.needOp(')'); }
+    else if (c.type === 'decimal') { c.prec = 10; c.scale = 0; }
+    if ((c.type === 'varchar') && c.len == null) throw err(1064, '42000', 'VARCHAR precisa de um tamanho, por exemplo VARCHAR(40).');
+    if (this.eatKw('UNSIGNED')) c.unsigned = true;
+    return c;
+  }
+  colDef() {
+    const n = this.ident(); const c = Object.assign({ n, nn: false, ai: false, pk: false, def: undefined, uniq: false }, this.colType());
+    for (;;) {
+      if (this.eatKw('NOT')) { this.needKw('NULL'); c.nn = true; }
+      else if (this.eatKw('NULL')) { /* padrão */ }
+      else if (this.eatKw('AUTO_INCREMENT')) c.ai = true;
+      else if (this.kw('PRIMARY')) { this.i++; this.needKw('KEY'); c.pk = true; c.nn = true; }
+      else if (this.eatKw('UNIQUE')) { this.eatKw('KEY'); c.uniq = true; }
+      else if (this.eatKw('DEFAULT')) { const e = this.unary(); c.def = e; }
+      else if (this.eatKw('COMMENT')) { if (this.cur.t !== 'str') this.fail(); this.i++; }
+      else if (this.eatKw('REFERENCES')) { const r = this.tref(); this.needOp('('); const rc = this.ident(); this.needOp(')'); c.ref = { rt: r.name, rc }; }
+      else break;
+    }
+    return c;
+  }
+  create() {
+    this.needKw('CREATE');
+    if (this.eatKw('DATABASE') || this.eatKw('SCHEMA')) { let ine = false; if (this.eatKw('IF')) { this.needKw('NOT'); this.needKw('EXISTS'); ine = true; } return { k: 'createdb', name: this.ident(), ine }; }
+    this.needKw('TABLE'); let ine = false; if (this.eatKw('IF')) { this.needKw('NOT'); this.needKw('EXISTS'); ine = true; }
+    const r = this.tref(); this.needOp('(');
+    const cols = [], fks = []; let pkCols = null;
+    do {
+      if (this.eatKw('CONSTRAINT')) { if (!this.kw('PRIMARY') && !this.kw('FOREIGN') && !this.kw('UNIQUE')) this.ident(); }
+      if (this.kw('PRIMARY')) { this.i++; this.needKw('KEY'); this.needOp('('); pkCols = [this.ident()]; while (this.eatOp(',')) pkCols.push(this.ident()); this.needOp(')'); }
+      else if (this.kw('FOREIGN')) {
+        this.i++; this.needKw('KEY'); this.needOp('('); const col = this.ident(); this.needOp(')'); this.needKw('REFERENCES');
+        const rt = this.tref(); this.needOp('('); const rc = this.ident(); this.needOp(')');
+        while (this.kw('ON')) { this.i++; this.i++; if (this.eatKw('SET')) this.i++; else if (this.eatKw('NO')) this.i++; else this.i++; }
+        fks.push({ col, rt: rt.name, rc });
+      }
+      else if (this.kw('KEY') || this.kw('INDEX')) { this.i++; if (this.cur.t === 'id') this.i++; this.needOp('('); this.ident(); while (this.eatOp(',')) this.ident(); this.needOp(')'); }
+      else if (this.kw('UNIQUE')) { this.i++; this.eatKw('KEY'); if (this.cur.t === 'id') this.i++; this.needOp('('); const u = this.ident(); this.needOp(')'); cols.push({ __uniq: u }); }
+      else cols.push(this.colDef());
+    } while (this.eatOp(','));
+    this.needOp(')');
+    while (this.cur.t !== 'eof' && !this.op(';')) this.i++;   // ENGINE=..., CHARSET=...
+    return { k: 'createtable', db: r.db, name: r.name, cols, fks, pkCols, ine };
+  }
+  drop() {
+    this.needKw('DROP');
+    if (this.eatKw('DATABASE') || this.eatKw('SCHEMA')) { let ie = false; if (this.eatKw('IF')) { this.needKw('EXISTS'); ie = true; } return { k: 'dropdb', name: this.ident(), ie }; }
+    this.needKw('TABLE'); let ie = false; if (this.eatKw('IF')) { this.needKw('EXISTS'); ie = true; }
+    const r = this.tref(); return { k: 'droptable', db: r.db, name: r.name, ie };
+  }
+  alter() {
+    this.needKw('ALTER'); this.needKw('TABLE'); const r = this.tref(); const a = { k: 'alter', db: r.db, tbl: r.name };
+    if (this.eatKw('ADD')) {
+      if (this.kw('FOREIGN') || this.kw('CONSTRAINT')) {
+        if (this.eatKw('CONSTRAINT')) this.ident();
+        this.needKw('FOREIGN'); this.needKw('KEY'); this.needOp('('); const col = this.ident(); this.needOp(')'); this.needKw('REFERENCES');
+        const rt = this.tref(); this.needOp('('); const rc = this.ident(); this.needOp(')'); a.op = 'addfk'; a.fk = { col, rt: rt.name, rc }; return a;
+      }
+      this.eatKw('COLUMN'); a.op = 'add'; a.col = this.colDef();
+      if (this.eatKw('FIRST')) a.first = true; else if (this.eatKw('AFTER')) a.after = this.ident();
+    } else if (this.eatKw('DROP')) { this.eatKw('COLUMN'); a.op = 'drop'; a.name = this.ident(); }
+    else if (this.eatKw('MODIFY')) { this.eatKw('COLUMN'); a.op = 'modify'; a.col = this.colDef(); }
+    else if (this.eatKw('RENAME')) {
+      if (this.eatKw('COLUMN')) { a.op = 'rencol'; a.name = this.ident(); this.needKw('TO'); a.to = this.ident(); }
+      else { this.eatKw('TO'); a.op = 'rentbl'; a.to = this.ident(); }
+    } else this.fail();
+    return a;
+  }
+  show() {
+    this.needKw('SHOW'); this.eatKw('FULL');
+    if (this.eatKw('DATABASES') || this.eatKw('SCHEMAS')) return { k: 'showdbs' };
+    if (this.eatKw('TABLES')) { let db = null; if (this.eatKw('FROM') || this.eatKw('IN')) db = this.ident(); return { k: 'showtables', db }; }
+    if (this.eatKw('COLUMNS') || this.eatKw('FIELDS')) { if (!this.eatKw('FROM')) this.needKw('IN'); const r = this.tref(); let db = r.db; if (this.eatKw('FROM') || this.eatKw('IN')) db = this.ident(); return { k: 'describe', tbl: r.name, db }; }
+    if (this.eatKw('CREATE')) { this.needKw('TABLE'); const r = this.tref(); return { k: 'showcreate', tbl: r.name, db: r.db }; }
+    throw err(1064, '42000', 'Esse SHOW não é suportado aqui. Use SHOW DATABASES; SHOW TABLES; ou SHOW CREATE TABLE nome;');
+  }
+}
+
+/* ---------- valores ---------- */
+const fold = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const isNum = v => typeof v === 'number';
+function toNum(v) { if (v === null) return null; if (isNum(v)) return v; const m = /^\s*[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?/.exec(v); return m ? parseFloat(m[0]) : 0; }
+function cmpVals(a, b) {
+  if (isNum(a) && isNum(b)) return a - b;
+  if (isNum(a) || isNum(b)) { const x = toNum(a), y = toNum(b); return x - y; }
+  const x = fold(a), y = fold(b); return x < y ? -1 : x > y ? 1 : 0;
+}
+const keyOf = v => v === null ? '\u0000N' : isNum(v) ? 'n' + v : 's' + fold(v);
+const truthy = v => v !== null && toNum(v) !== 0;
+const clean = v => isNum(v) ? Number(v.toPrecision(14)) : v;
+function round(v, d) { const m = Math.pow(10, d); return Math.round((v + (v >= 0 ? 1 : -1) * 1e-12) * m) / m; }
+function likeRe(p) {
+  let r = ''; const s = fold(p);
+  for (let i = 0; i < s.length; i++) { const c = s[i]; if (c === '\\' && i + 1 < s.length) { r += s[++i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); } else if (c === '%') r += '[\\s\\S]*'; else if (c === '_') r += '[\\s\\S]'; else r += c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  return new RegExp('^' + r + '$');
+}
+const AGG = new Set(['COUNT', 'SUM', 'AVG', 'MIN', 'MAX']);
+function kids(e) {
+  switch (e.k) {
+    case 'bin': return [e.l, e.r]; case 'not': case 'neg': case 'isnull': case 'istf': return [e.e];
+    case 'in': return [e.e].concat(e.list || []); case 'between': return [e.e, e.a, e.b]; case 'like': return [e.e, e.p];
+    case 'case': { const a = []; if (e.base) a.push(e.base); e.whens.forEach(w => a.push(w[0], w[1])); if (e.els) a.push(e.els); return a; }
+    case 'fn': return e.args; default: return [];
+  }
+}
+function walk(e, fn, noAgg) { if (!e) return; fn(e); if (noAgg && e.k === 'fn' && AGG.has(e.name)) return; kids(e).forEach(x => walk(x, fn, noAgg)); }
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const hasAgg = e => { let f = false; walk(e, x => { if (x.k === 'fn' && AGG.has(x.name)) f = true; }); return f; };
+
+/* ---------- servidor ---------- */
+class Server {
+  constructor() { this.dbs = {}; this.cur = null; this.safe = false; this.clause = ''; }
+  static fresh(dbsObj, cur) { const s = new Server(); s.dbs = JSON.parse(JSON.stringify(dbsObj)); s.cur = cur; return s; }
+  clone() { const s = Server.fresh(this.dbs, this.cur); s.safe = this.safe; return s; }
+  snapshot() { return JSON.parse(JSON.stringify(this.dbs)); }
+  dbNames() { return ['information_schema', 'mysql', 'performance_schema', 'sys'].concat(Object.keys(this.dbs)).sort((a, b) => a.localeCompare(b)); }
+  getDb(name) { const k = Object.keys(this.dbs).find(x => x.toLowerCase() === String(name).toLowerCase()); return k ? { name: k, tables: this.dbs[k] } : null; }
+  useDb(name) { if (name) { const d = this.getDb(name); if (!d) { if (['information_schema', 'mysql', 'performance_schema', 'sys'].includes(String(name).toLowerCase())) return { name, tables: {}, sys: true }; throw err(1049, '42000', `Banco de dados '${name}' desconhecido.`); } return d; } if (!this.cur) throw err(1046, '3D000', 'Nenhum banco selecionado. Use USE nome_do_banco; antes de consultar uma tabela.'); return this.getDb(this.cur) || { name: this.cur, tables: {} }; }
+  table(db, name) {
+    const d = this.useDb(db); const k = Object.keys(d.tables).find(x => x.toLowerCase() === String(name).toLowerCase());
+    if (!k) throw err(1146, '42S02', `A tabela '${d.name}.${name}' não existe. Confira o nome com SHOW TABLES;`);
+    return d.tables[k];
+  }
+  /* executa texto com várias instruções */
+  run(text) {
+    const parts = split(text); const out = [];
+    for (const p of parts) {
+      const t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+      let r;
+      try { r = this.exec(p.text); r.ok = true; }
+      catch (e) { if (!(e instanceof SqlError)) { r = { ok: false, code: 0, state: 'HY000', error: 'Erro interno do simulador: ' + e.message }; } else r = { ok: false, code: e.code, state: e.state, error: e.message }; }
+      r.sql = p.text; r.start = p.start; r.end = p.end; r.ms = ((typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0) / 1000;
+      out.push(r); if (!r.ok) break;
+    }
+    return out;
+  }
+  exec(sql) {
+    const st = new Parser(sql).statement();
+    switch (st.k) {
+      case 'select': { this.clause = ''; const r = this.runSelect(st, null); return { type: 'rows', cols: r.cols, rows: r.rows, msg: `${r.rows.length} linha(s) retornada(s)` }; }
+      case 'showdbs': return { type: 'rows', cols: [{ name: 'Database' }], rows: this.dbNames().map(n => [n]), msg: `${this.dbNames().length} linha(s) retornada(s)` };
+      case 'showtables': { const d = this.useDb(st.db); const names = Object.keys(d.tables).sort((a, b) => a.localeCompare(b)); return { type: 'rows', cols: [{ name: 'Tables_in_' + d.name }], rows: names.map(n => [n]), msg: `${names.length} linha(s) retornada(s)` }; }
+      case 'describe': return this.doDescribe(st);
+      case 'showcreate': { const t = this.table(st.db, st.tbl); return { type: 'rows', cols: [{ name: 'Table' }, { name: 'Create Table' }], rows: [[t.name, ddl(t)]], msg: '1 linha(s) retornada(s)' }; }
+      case 'use': { const d = this.useDb(st.db); this.cur = d.name; return { type: 'ok', affected: 0, msg: 'Banco de dados alterado', refresh: true }; }
+      case 'createdb': {
+        if (this.getDb(st.name)) { if (st.ine) return { type: 'ok', affected: 1, msg: '1 linha(s) afetada(s), 1 aviso(s): o banco já existia', refresh: true }; throw err(1007, 'HY000', `Não é possível criar o banco '${st.name}': ele já existe.`); }
+        this.dbs[st.name] = {}; return { type: 'ok', affected: 1, msg: '1 linha(s) afetada(s)', refresh: true };
+      }
+      case 'dropdb': { const d = this.getDb(st.name); if (!d) { if (st.ie) return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s), 1 aviso(s)', refresh: true }; throw err(1008, 'HY000', `Não é possível apagar o banco '${st.name}': ele não existe.`); } delete this.dbs[d.name]; if (this.cur === d.name) this.cur = null; return { type: 'ok', affected: Object.keys(d.tables).length, msg: `${Object.keys(d.tables).length} linha(s) afetada(s)`, refresh: true }; }
+      case 'createtable': return this.createTable(st);
+      case 'droptable': return this.dropTable(st);
+      case 'alter': return this.alterTable(st);
+      case 'truncate': { const t = this.table(st.db, st.tbl); const dbn = this.useDb(st.db); this.checkChildren(dbn, t, null, true); t.rows = []; t.ai = 1; return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s)', refresh: true }; }
+      case 'insert': return this.doInsert(st);
+      case 'update': return this.doUpdate(st);
+      case 'delete': return this.doDelete(st);
+    }
+    throw err(1064, '42000', 'Comando não suportado.');
+  }
+  doDescribe(st) {
+    const t = this.table(st.db, st.tbl); const fkc = new Set(t.fks.map(f => f.col.toLowerCase()));
+    const rows = t.cols.map(c => [c.n, typeStr(c), c.nn && !c.pk ? 'NO' : c.pk ? 'NO' : 'YES', c.pk ? 'PRI' : fkc.has(c.n.toLowerCase()) ? 'MUL' : c.uniq ? 'UNI' : '', c.def !== undefined && c.def !== null ? String(c.def) : null, c.ai ? 'auto_increment' : '']);
+    return { type: 'rows', cols: [{ name: 'Field' }, { name: 'Type' }, { name: 'Null' }, { name: 'Key' }, { name: 'Default' }, { name: 'Extra' }], rows, msg: `${rows.length} linha(s) retornada(s)` };
+  }
+  /* ----- DDL ----- */
+  evalDefault(c) { if (c.def === undefined) return undefined; if (c.def && c.def.k) { return this.ev(c.def, { src: [], row: [], parent: null }, null); } return c.def; }
+  createTable(st) {
+    const d = this.useDb(st.db); const dup = Object.keys(d.tables).find(x => x.toLowerCase() === st.name.toLowerCase());
+    if (dup) { if (st.ine) return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s), 1 aviso(s): a tabela já existe', refresh: true }; throw err(1050, '42S01', `A tabela '${st.name}' já existe.`); }
+    const cols = []; const fks = st.fks.slice();
+    for (const c of st.cols) {
+      if (c.__uniq) { const x = cols.find(y => y.n.toLowerCase() === c.__uniq.toLowerCase()); if (x) x.uniq = true; continue; }
+      if (cols.some(y => y.n.toLowerCase() === c.n.toLowerCase())) throw err(1060, '42S21', `Nome de coluna duplicado '${c.n}'.`);
+      const col = Object.assign({}, c); if (col.def !== undefined) { col.def = this.evalDefault(col); }
+      if (c.ref) { fks.push({ col: c.n, rt: c.ref.rt, rc: c.ref.rc }); delete col.ref; }
+      cols.push(col);
+    }
+    if (!cols.length) throw err(1113, '42000', 'Uma tabela precisa ter pelo menos uma coluna.');
+    if (st.pkCols) for (const p of st.pkCols) { const x = cols.find(y => y.n.toLowerCase() === p.toLowerCase()); if (!x) throw err(1072, '42000', `A coluna-chave '${p}' não existe na tabela.`); x.pk = true; x.nn = true; }
+    const ais = cols.filter(c => c.ai); if (ais.length > 1) throw err(1075, '42000', 'Só pode existir uma coluna AUTO_INCREMENT.');
+    if (ais.length && !ais[0].pk && !ais[0].uniq) throw err(1075, '42000', 'Uma coluna AUTO_INCREMENT precisa ser chave (PRIMARY KEY).');
+    const fixed = [];
+    fks.forEach((f, i) => {
+      const own = cols.find(c => c.n.toLowerCase() === f.col.toLowerCase()); if (!own) throw err(1072, '42000', `A coluna '${f.col}' da chave estrangeira não existe na tabela.`);
+      const same = f.rt.toLowerCase() === st.name.toLowerCase();
+      const rt = same ? { cols } : Object.values(d.tables).find(t => t.name.toLowerCase() === f.rt.toLowerCase());
+      if (!rt) throw err(1824, 'HY000', `Não foi possível abrir a tabela referenciada '${f.rt}'. Crie primeiro a tabela '${f.rt}'.`);
+      const rc = rt.cols.find(c => c.n.toLowerCase() === f.rc.toLowerCase()); if (!rc) throw err(1822, 'HY000', `A coluna '${f.rc}' não existe na tabela '${f.rt}'.`);
+      fixed.push({ col: own.n, rt: same ? st.name : rt.name, rc: rc.n, name: `${st.name}_ibfk_${i + 1}` });
+    });
+    d.tables[st.name] = { name: st.name, cols, rows: [], fks: fixed, ai: 1 };
+    return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s)', refresh: true };
+  }
+  dropTable(st) {
+    const d = this.useDb(st.db); const k = Object.keys(d.tables).find(x => x.toLowerCase() === st.name.toLowerCase());
+    if (!k) { if (st.ie) return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s), 1 aviso(s)', refresh: true }; throw err(1051, '42S02', `Tabela '${d.name}.${st.name}' desconhecida.`); }
+    for (const t of Object.values(d.tables)) for (const f of t.fks) if (f.rt.toLowerCase() === k.toLowerCase() && t.name !== k) throw err(3730, 'HY000', `Não dá para apagar a tabela '${k}': a tabela '${t.name}' depende dela por uma chave estrangeira (${f.name}). Apague '${t.name}' primeiro.`);
+    delete d.tables[k]; return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s)', refresh: true };
+  }
+  alterTable(st) {
+    const d = this.useDb(st.db); const t = this.table(st.db, st.tbl); const find = n => t.cols.findIndex(c => c.n.toLowerCase() === String(n).toLowerCase());
+    if (st.op === 'add') {
+      if (find(st.col.n) >= 0) throw err(1060, '42S21', `Nome de coluna duplicado '${st.col.n}'.`);
+      const col = Object.assign({}, st.col); if (col.def !== undefined) col.def = this.evalDefault(col); delete col.ref;
+      let pos = t.cols.length; if (st.first) pos = 0; else if (st.after) { const a = find(st.after); if (a < 0) throw err(1054, '42S22', `Coluna '${st.after}' desconhecida.`); pos = a + 1; }
+      let fill = col.def !== undefined ? col.def : null; if (fill === null && col.nn) fill = ['int', 'decimal', 'float', 'bool'].includes(col.type) ? 0 : '';
+      if (fill !== null) fill = this.coerce(col, fill, 1);
+      t.cols.splice(pos, 0, col); t.rows.forEach(r => r.splice(pos, 0, fill));
+      if (col.ai) { t.ai = 1; t.rows.forEach((r, i) => { r[pos] = i + 1; }); t.ai = t.rows.length + 1; }
+    } else if (st.op === 'drop') {
+      const i = find(st.name); if (i < 0) throw err(1091, '42000', `Não dá para apagar '${st.name}': a coluna não existe.`);
+      if (t.cols[i].pk) throw err(1090, '42000', 'Não dá para apagar a chave primária por aqui.');
+      if (t.fks.some(f => f.col.toLowerCase() === st.name.toLowerCase())) throw err(1553, 'HY000', `A coluna '${st.name}' é usada por uma chave estrangeira.`);
+      for (const o of Object.values(d.tables)) if (o.fks.some(f => f.rt.toLowerCase() === t.name.toLowerCase() && f.rc.toLowerCase() === st.name.toLowerCase())) throw err(1553, 'HY000', `A coluna '${st.name}' é referenciada pela tabela '${o.name}'.`);
+      t.cols.splice(i, 1); t.rows.forEach(r => r.splice(i, 1));
+    } else if (st.op === 'modify') {
+      const i = find(st.col.n); if (i < 0) throw err(1054, '42S22', `Coluna '${st.col.n}' desconhecida.`);
+      const col = Object.assign({}, st.col); if (col.def !== undefined) col.def = this.evalDefault(col); delete col.ref; if (t.cols[i].pk) { col.pk = true; col.nn = true; }
+      const rows = t.rows.map((r, ri) => { const v = r[i]; if (v === null && col.nn) throw err(1138, '22004', `Valor NULL inválido: a coluna '${col.n}' não aceita NULL.`); return v === null ? null : this.coerce(col, v, ri + 1); });
+      t.cols[i] = col; t.rows.forEach((r, ri) => { r[i] = rows[ri]; });
+    } else if (st.op === 'rencol') {
+      const i = find(st.name); if (i < 0) throw err(1054, '42S22', `Coluna '${st.name}' desconhecida.`); if (find(st.to) >= 0) throw err(1060, '42S21', `Nome de coluna duplicado '${st.to}'.`);
+      const old = t.cols[i].n; t.cols[i].n = st.to; t.fks.forEach(f => { if (f.col === old) f.col = st.to; });
+      for (const o of Object.values(d.tables)) o.fks.forEach(f => { if (f.rt === t.name && f.rc === old) f.rc = st.to; });
+    } else if (st.op === 'rentbl') {
+      if (Object.keys(d.tables).some(x => x.toLowerCase() === st.to.toLowerCase())) throw err(1050, '42S01', `A tabela '${st.to}' já existe.`);
+      const old = t.name; delete d.tables[old]; t.name = st.to; d.tables[st.to] = t; for (const o of Object.values(d.tables)) o.fks.forEach(f => { if (f.rt === old) f.rt = st.to; });
+    } else if (st.op === 'addfk') {
+      const own = t.cols.find(c => c.n.toLowerCase() === st.fk.col.toLowerCase()); if (!own) throw err(1072, '42000', `A coluna '${st.fk.col}' não existe.`);
+      const rt = Object.values(d.tables).find(x => x.name.toLowerCase() === st.fk.rt.toLowerCase()); if (!rt) throw err(1824, 'HY000', `Não foi possível abrir a tabela referenciada '${st.fk.rt}'.`);
+      const rc = rt.cols.find(c => c.n.toLowerCase() === st.fk.rc.toLowerCase()); if (!rc) throw err(1822, 'HY000', `A coluna '${st.fk.rc}' não existe em '${rt.name}'.`);
+      const ri = rt.cols.indexOf(rc), oi = t.cols.indexOf(own);
+      for (const r of t.rows) if (r[oi] !== null && !rt.rows.some(x => cmpVals(x[ri], r[oi]) === 0)) throw err(1452, '23000', 'Não dá para criar a chave estrangeira: já existem linhas apontando para valores que não existem na tabela referenciada.');
+      t.fks.push({ col: own.n, rt: rt.name, rc: rc.n, name: `${t.name}_ibfk_${t.fks.length + 1}` });
+    }
+    return { type: 'ok', affected: 0, msg: `0 linha(s) afetada(s)  Registros: ${t.rows.length}  Duplicados: 0  Avisos: 0`, refresh: true };
+  }
+  /* ----- DML ----- */
+  coerce(c, v, rowNo) {
+    if (v === null) return null;
+    const bad = (m) => err(1366, 'HY000', m);
+    switch (c.type) {
+      case 'int': case 'bool': {
+        if (!isNum(v) && !/^\s*[-+]?\d+(\.\d+)?\s*$/.test(v)) throw bad(`Valor inteiro incorreto: '${v}' para a coluna '${c.n}' na linha ${rowNo}. Coluna numérica não aceita texto.`);
+        const x = Math.round(toNum(v)); if (Math.abs(x) > 2147483647) throw err(1264, '22003', `Valor fora do limite para a coluna '${c.n}' na linha ${rowNo}.`);
+        if (c.raw === 'TINYINT' && (x > 127 || x < -128)) throw err(1264, '22003', `Valor fora do limite para a coluna '${c.n}' na linha ${rowNo}.`);
+        return x;
+      }
+      case 'decimal': {
+        if (!isNum(v) && !/^\s*[-+]?(\d+\.?\d*|\.\d+)\s*$/.test(v)) throw bad(`Valor decimal incorreto: '${v}' para a coluna '${c.n}' na linha ${rowNo}.`);
+        const x = round(toNum(v), c.scale); if (Math.abs(x) >= Math.pow(10, c.prec - c.scale)) throw err(1264, '22003', `Valor fora do limite para a coluna '${c.n}' na linha ${rowNo}: ${c.raw}(${c.prec},${c.scale}) aceita no máximo ${c.prec - c.scale} dígito(s) antes da vírgula.`);
+        return x;
+      }
+      case 'float': { if (!isNum(v) && !/^\s*[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?\s*$/.test(v)) throw bad(`Valor numérico incorreto: '${v}' para a coluna '${c.n}' na linha ${rowNo}.`); return toNum(v); }
+      case 'varchar': case 'char': { const s = String(v); if (s.length > c.len) throw err(1406, '22001', `Texto grande demais para a coluna '${c.n}' na linha ${rowNo}: o limite é ${c.len} caracteres e o texto tem ${s.length}.`); return s; }
+      case 'date': case 'datetime': { const s = String(v); if (!/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}(:\d{2})?)?$/.test(s)) throw err(1292, '22007', `Valor de data incorreto: '${s}' para a coluna '${c.n}' na linha ${rowNo}. Use o formato AAAA-MM-DD.`); return c.type === 'date' ? s.slice(0, 10) : (s.length === 10 ? s + ' 00:00:00' : s); }
+      default: return String(v);
+    }
+  }
+  checkRow(d, t, row, rowNo, ignoreIdx) {
+    t.cols.forEach((c, i) => { if (row[i] === null && c.nn) throw err(1048, '23000', `A coluna '${c.n}' não pode ser NULL.`); });
+    const pk = t.cols.map((c, i) => c.pk ? i : -1).filter(i => i >= 0);
+    if (pk.length) { const dup = t.rows.some((r, ri) => ri !== ignoreIdx && pk.every(i => cmpVals(r[i], row[i]) === 0)); if (dup) throw err(1062, '23000', `Entrada duplicada '${pk.map(i => row[i]).join('-')}' para a chave PRIMARY. Já existe uma linha com esse id.`); }
+    t.cols.forEach((c, i) => { if (c.uniq && row[i] !== null && t.rows.some((r, ri) => ri !== ignoreIdx && cmpVals(r[i], row[i]) === 0)) throw err(1062, '23000', `Entrada duplicada '${row[i]}' para a coluna única '${c.n}'.`); });
+    for (const f of t.fks) {
+      const i = t.cols.findIndex(c => c.n === f.col); if (row[i] === null) continue;
+      const rt = Object.values(d.tables).find(x => x.name === f.rt); const ri = rt.cols.findIndex(c => c.n === f.rc);
+      const pool = rt === t ? t.rows.concat([row]) : rt.rows;
+      if (!pool.some(x => cmpVals(x[ri], row[i]) === 0)) throw err(1452, '23000', `Não dá para guardar: ${f.col} = ${row[i]} não existe em ${f.rt}(${f.rc}). A chave estrangeira (${f.name}) protege o vínculo entre as tabelas.`);
+    }
+  }
+  checkChildren(d, t, rowsGone, all) {
+    for (const o of Object.values(d.tables)) for (const f of o.fks) {
+      if (f.rt !== t.name) continue;
+      const oi = o.cols.findIndex(c => c.n === f.col), ri = t.cols.findIndex(c => c.n === f.rc);
+      const gone = all ? t.rows : rowsGone;
+      for (const g of gone) if (o.rows.some(x => x[oi] !== null && cmpVals(x[oi], g[ri]) === 0)) {
+        if (o === t && !all) continue;
+        throw err(1451, '23000', `Não dá para apagar ou alterar essa linha: a tabela '${o.name}' ainda tem linhas ligadas a ela (${f.name}: ${f.col} → ${t.name}.${f.rc}). Apague ou altere primeiro as linhas filhas.`);
+      }
+    }
+  }
+  doInsert(st) {
+    const d = this.useDb(st.db); const t = this.table(st.db, st.tbl);
+    const idx = st.cols ? st.cols.map(n => { const i = t.cols.findIndex(c => c.n.toLowerCase() === n.toLowerCase()); if (i < 0) throw err(1054, '42S22', `Coluna '${n}' desconhecida em 'field list'.`); return i; }) : t.cols.map((_, i) => i);
+    if (st.cols && new Set(idx).size !== idx.length) throw err(1110, '42000', 'Coluna repetida na lista do INSERT.');
+    let src; if (st.sel) { this.clause = ''; src = this.runSelect(st.sel, null).rows.map(r => r.map(v => ({ v }))); } else src = st.rows;
+    const scope = { src: [], row: [], parent: null }; let ai = t.ai; const added = []; const before = t.rows.length;
+    try { src.forEach((vals, ri) => {
+      if (vals.length !== idx.length) throw err(1136, '21S01', `O número de colunas não bate com o número de valores na linha ${ri + 1}. Foram informadas ${idx.length} coluna(s) e ${vals.length} valor(es).`);
+      const row = t.cols.map(c => { const dv = this.evalDefault(c); return dv === undefined ? null : dv; });
+      const given = new Set();
+      vals.forEach((e, j) => { const col = t.cols[idx[j]]; let v; if (e && e.k === 'default') return; v = e && e.k ? (this.clause = 'field list', this.ev(e, scope, null)) : e.v; given.add(idx[j]); row[idx[j]] = v === null ? null : this.coerce(col, v, ri + 1); });
+      t.cols.forEach((c, i) => {
+        if (c.ai) { if (!given.has(i) || row[i] === null || row[i] === 0) row[i] = ai++; else if (row[i] >= ai) ai = row[i] + 1; }
+        else if (!given.has(i) && c.nn && c.def === undefined) throw err(1364, 'HY000', `O campo '${c.n}' é obrigatório (NOT NULL) e não tem valor padrão. Informe um valor para ele.`);
+      });
+      this.checkRow(d, t, row, ri + 1);
+      t.rows.push(row); added.push(row);
+    }); } catch (e) { t.rows.length = before; throw e; }
+    t.ai = Math.max(t.ai, ai);
+    return { type: 'ok', affected: added.length, msg: `${added.length} linha(s) afetada(s)  Registros: ${added.length}  Duplicados: 0  Avisos: 0`, refresh: true };
+  }
+  safeCheck(t, where, verb) {
+    if (!this.safe) return;
+    let key = false; walk(where, x => { if (x.k === 'col' && t.cols.some(c => c.pk && c.n.toLowerCase() === x.c.toLowerCase())) key = true; });
+    if (!key) throw err(1175, 'HY000', `Modo seguro ativado: você tentou ${verb} sem um WHERE que use uma coluna-chave (como id). Use WHERE id = ... ou desligue o Modo seguro na barra de ferramentas.`);
+  }
+  matching(t, where, alias) {
+    const scope = { src: [{ alias: alias || t.name, name: t.name, cols: t.cols.map(c => ({ n: c.n, scale: c.type === 'decimal' ? c.scale : null })) }], row: null, parent: null };
+    this.clause = 'where clause'; const out = [];
+    t.rows.forEach((r, i) => { scope.row = [r]; if (!where || truthy(this.ev(where, scope, null))) out.push(i); });
+    return { idx: out, scope };
+  }
+  doUpdate(st) {
+    const d = this.useDb(st.db); const t = this.table(st.db, st.tbl); this.safeCheck(t, st.where, 'alterar linhas');
+    const { idx, scope } = this.matching(t, st.where);
+    const ci = st.sets.map(s => { const i = t.cols.findIndex(c => c.n.toLowerCase() === s.c.toLowerCase()); if (i < 0) throw err(1054, '42S22', `Coluna '${s.c}' desconhecida em 'field list'.`); return i; });
+    const plan = []; let changed = 0;
+    idx.forEach(ri => {
+      scope.row = [t.rows[ri]]; this.clause = 'field list'; const nr = t.rows[ri].slice();
+      st.sets.forEach((s, k) => { const v = s.e.k === 'default' ? (this.evalDefault(t.cols[ci[k]]) ?? null) : this.ev(s.e, scope, null); nr[ci[k]] = v === null ? null : this.coerce(t.cols[ci[k]], v, ri + 1); });
+      if (nr.some((v, i) => v !== t.rows[ri][i])) changed++;
+      plan.push([ri, nr]);
+    });
+    for (const [ri, nr] of plan) {
+      this.checkRow(d, t, nr, ri + 1, ri);
+      const pkChanged = t.cols.some((c, i) => nr[i] !== t.rows[ri][i] && t.fks.length === 0 && Object.values(d.tables).some(o => o.fks.some(f => f.rt === t.name && f.rc === c.n)));
+      if (pkChanged) this.checkChildren(d, t, [t.rows[ri]], false);
+    }
+    plan.forEach(([ri, nr]) => { t.rows[ri] = nr; });
+    return { type: 'ok', affected: changed, msg: `${changed} linha(s) afetada(s)  Encontradas: ${idx.length}  Alteradas: ${changed}  Avisos: 0`, refresh: true };
+  }
+  doDelete(st) {
+    const d = this.useDb(st.db); const t = this.table(st.db, st.tbl); this.safeCheck(t, st.where, 'apagar linhas');
+    const { idx } = this.matching(t, st.where); const gone = idx.map(i => t.rows[i]);
+    this.checkChildren(d, t, gone, false);
+    const set = new Set(idx); t.rows = t.rows.filter((_, i) => !set.has(i));
+    return { type: 'ok', affected: idx.length, msg: `${idx.length} linha(s) afetada(s)`, refresh: true };
+  }
+  /* ----- SELECT ----- */
+  makeSource(s, parent) {
+    if (s.sub) { const r = this.runSelect(s.sub, parent); return { alias: s.alias, name: s.alias, cols: r.cols.map(c => ({ n: c.name, scale: c.scale == null ? null : c.scale })), rows: r.rows.map(x => x.slice()), pk: [] }; }
+    const t = this.table(s.db, s.name);
+    return { alias: s.alias || t.name, name: t.name, cols: t.cols.map(c => ({ n: c.n, scale: c.type === 'decimal' ? c.scale : null, pk: !!c.pk })), rows: t.rows };
+  }
+  resolve(scope, tbl, col) {
+    const c = col.toLowerCase(), tl = tbl ? tbl.toLowerCase() : null;
+    for (let sc = scope; sc; sc = sc.parent) {
+      const hits = [];
+      sc.src.forEach((s, si) => { if (tl && s.alias.toLowerCase() !== tl) return; const ci = s.cols.findIndex(x => x.n.toLowerCase() === c); if (ci >= 0) hits.push([si, ci]); });
+      if (hits.length > 1) throw err(1052, '23000', `A coluna '${col}' em '${this.clause || 'field list'}' é ambígua: existe em mais de uma tabela. Escreva tabela.coluna (por exemplo j.${col}).`);
+      if (hits.length) return { sc, si: hits[0][0], ci: hits[0][1] };
+    }
+    throw err(1054, '42S22', `Coluna '${tbl ? tbl + '.' : ''}${col}' desconhecida em '${this.clause || 'field list'}'. Confira o nome da coluna${tbl ? ' e o apelido da tabela' : ''}.`);
+  }
+  scaleOf(e, scope) {
+    switch (e.k) {
+      case 'num': return e.scale == null ? null : e.scale;
+      case 'col': { try { const r = this.resolve(scope, e.t, e.c); return r.sc.src[r.si].cols[r.ci].scale; } catch (x) { return null; } }
+      case 'neg': return this.scaleOf(e.e, scope);
+      case 'bin': { const a = this.scaleOf(e.l, scope), b = this.scaleOf(e.r, scope);
+        if (e.op === '+' || e.op === '-' || e.op === '%') return a == null && b == null ? null : Math.max(a || 0, b || 0);
+        if (e.op === '*') return a == null && b == null ? null : (a || 0) + (b || 0);
+        if (e.op === '/') return (a || 0) + 4; return null; }
+      case 'fn': {
+        const a = e.args[0] ? this.scaleOf(e.args[0], scope) : null;
+        if (e.name === 'AVG') return (a || 0) + 4; if (e.name === 'SUM' || e.name === 'MIN' || e.name === 'MAX' || e.name === 'ABS') return a;
+        if (e.name === 'ROUND') { const n = e.args[1] && e.args[1].k === 'num' ? e.args[1].v : 0; return n > 0 ? n : null; }
+        if (e.name === 'IFNULL' || e.name === 'COALESCE') { const s = e.args.map(x => this.scaleOf(x, scope)); return s.every(x => x == null) ? null : Math.max.apply(null, s.map(x => x || 0)); }
+        return null; }
+      case 'case': { const s = e.whens.map(w => this.scaleOf(w[1], scope)).concat(e.els ? [this.scaleOf(e.els, scope)] : []); return s.every(x => x == null) ? null : Math.max.apply(null, s.map(x => x || 0)); }
+      default: return null;
+    }
+  }
+  subRun(sel, scope) { const keep = this.clause; const r = this.runSelect(sel, scope); this.clause = keep; return r; }
+  ev(e, scope, grp) {
+    switch (e.k) {
+      case 'num': return e.v; case 'str': return e.v; case 'null': return null; case 'default': return null;
+      case 'col': { const r = this.resolve(scope, e.t, e.c); const row = r.sc.row; if (!row) return null; const x = row[r.si]; return x ? x[r.ci] : null; }
+      case 'neg': { const v = this.ev(e.e, scope, grp); return v === null ? null : -toNum(v); }
+      case 'not': { const v = this.ev(e.e, scope, grp); return v === null ? null : (truthy(v) ? 0 : 1); }
+      case 'isnull': { const v = this.ev(e.e, scope, grp); return (v === null) !== e.neg ? 1 : 0; }
+      case 'istf': { const v = this.ev(e.e, scope, grp); const r = v !== null && (truthy(v) ? 1 : 0) === e.v; return r !== e.neg ? 1 : 0; }
+      case 'bin': {
+        if (e.op === 'AND') { const a = this.ev(e.l, scope, grp); if (a !== null && !truthy(a)) return 0; const b = this.ev(e.r, scope, grp); if (b !== null && !truthy(b)) return 0; return a === null || b === null ? null : 1; }
+        if (e.op === 'OR') { const a = this.ev(e.l, scope, grp); if (a !== null && truthy(a)) return 1; const b = this.ev(e.r, scope, grp); if (b !== null && truthy(b)) return 1; return a === null || b === null ? null : 0; }
+        const a = this.ev(e.l, scope, grp), b = this.ev(e.r, scope, grp);
+        if (a === null || b === null) return null;
+        switch (e.op) {
+          case '=': return cmpVals(a, b) === 0 ? 1 : 0; case '<>': return cmpVals(a, b) !== 0 ? 1 : 0;
+          case '<': return cmpVals(a, b) < 0 ? 1 : 0; case '>': return cmpVals(a, b) > 0 ? 1 : 0;
+          case '<=': return cmpVals(a, b) <= 0 ? 1 : 0; case '>=': return cmpVals(a, b) >= 0 ? 1 : 0;
+          case '+': return clean(toNum(a) + toNum(b)); case '-': return clean(toNum(a) - toNum(b)); case '*': return clean(toNum(a) * toNum(b));
+          case '/': { const y = toNum(b); return y === 0 ? null : clean(toNum(a) / y); }
+          case 'DIV': { const y = toNum(b); return y === 0 ? null : Math.trunc(toNum(a) / y); }
+          case '%': { const y = toNum(b); return y === 0 ? null : clean(toNum(a) % y); }
+        }
+        return null;
+      }
+      case 'in': {
+        const v = this.ev(e.e, scope, grp); if (v === null) return null;
+        let list; if (e.sub) { const r = this.subRun(e.sub, scope); if (r.cols.length !== 1) throw err(1241, '21000', 'A subconsulta do IN deve retornar uma só coluna.'); list = r.rows.map(x => x[0]); } else list = e.list.map(x => this.ev(x, scope, grp));
+        let found = false, nul = false; for (const x of list) { if (x === null) nul = true; else if (cmpVals(v, x) === 0) { found = true; break; } }
+        if (found) return e.neg ? 0 : 1; if (nul) return null; return e.neg ? 1 : 0;
+      }
+      case 'between': { const v = this.ev(e.e, scope, grp), a = this.ev(e.a, scope, grp), b = this.ev(e.b, scope, grp); if (v === null || a === null || b === null) return null; const r = cmpVals(v, a) >= 0 && cmpVals(v, b) <= 0; return r !== e.neg ? 1 : 0; }
+      case 'like': { const v = this.ev(e.e, scope, grp), p = this.ev(e.p, scope, grp); if (v === null || p === null) return null; const r = likeRe(String(p)).test(fold(v)); return r !== e.neg ? 1 : 0; }
+      case 'case': {
+        const base = e.base ? this.ev(e.base, scope, grp) : null;
+        for (const w of e.whens) { const c = this.ev(w[0], scope, grp); if (e.base ? (base !== null && c !== null && cmpVals(base, c) === 0) : truthy(c)) return this.ev(w[1], scope, grp); }
+        return e.els ? this.ev(e.els, scope, grp) : null;
+      }
+      case 'sub': { const r = this.subRun(e.sel, scope); if (r.cols.length !== 1) throw err(1241, '21000', 'A subconsulta deve retornar uma só coluna.'); if (r.rows.length > 1) throw err(1242, '21000', 'A subconsulta retornou mais de uma linha onde só cabe um valor.'); return r.rows.length ? r.rows[0][0] : null; }
+      case 'fn': return this.fn(e, scope, grp);
+    }
+    throw err(1064, '42000', 'Expressão não suportada.');
+  }
+  fn(e, scope, grp) {
+    const n = e.name;
+    if (AGG.has(n)) {
+      if (!grp) throw err(1111, 'HY000', `Uso inválido da função de agregação ${n}(). Ela não pode ficar no WHERE; use HAVING depois do GROUP BY.`);
+      const keep = scope.row; let vals = [];
+      if (e.star) { scope.row = keep; return grp.length; }
+      if (e.args.length !== 1) throw err(1064, '42000', `${n}() recebe exatamente um argumento.`);
+      for (const t of grp) { scope.row = t; const v = this.ev(e.args[0], scope, null); if (v !== null) vals.push(v); }
+      scope.row = keep;
+      if (e.distinct) { const seen = new Set(); vals = vals.filter(v => { const k = keyOf(v); if (seen.has(k)) return false; seen.add(k); return true; }); }
+      if (n === 'COUNT') return vals.length; if (!vals.length) return null;
+      if (n === 'SUM') return clean(vals.reduce((a, b) => a + toNum(b), 0));
+      if (n === 'AVG') return clean(vals.reduce((a, b) => a + toNum(b), 0) / vals.length);
+      if (n === 'MIN') return vals.reduce((a, b) => cmpVals(b, a) < 0 ? b : a);
+      return vals.reduce((a, b) => cmpVals(b, a) > 0 ? b : a);
+    }
+    const a = e.args.map(x => this.ev(x, scope, grp)); const s = x => x === null ? null : String(x);
+    const need = (lo, hi) => { if (a.length < lo || a.length > (hi == null ? lo : hi)) throw err(1582, '42000', `Quantidade de argumentos incorreta para ${n}().`); };
+    switch (n) {
+      case 'ROUND': need(1, 2); return a[0] === null ? null : round(toNum(a[0]), a[1] == null ? 0 : toNum(a[1]));
+      case 'CEIL': case 'CEILING': need(1); return a[0] === null ? null : Math.ceil(toNum(a[0]));
+      case 'FLOOR': need(1); return a[0] === null ? null : Math.floor(toNum(a[0]));
+      case 'ABS': need(1); return a[0] === null ? null : Math.abs(toNum(a[0]));
+      case 'UPPER': case 'UCASE': need(1); return a[0] === null ? null : s(a[0]).toUpperCase();
+      case 'LOWER': case 'LCASE': need(1); return a[0] === null ? null : s(a[0]).toLowerCase();
+      case 'LENGTH': case 'CHAR_LENGTH': need(1); return a[0] === null ? null : s(a[0]).length;
+      case 'TRIM': need(1); return a[0] === null ? null : s(a[0]).trim();
+      case 'CONCAT': return a.some(x => x === null) ? null : a.map(String).join('');
+      case 'REPLACE': need(3); return a.some(x => x === null) ? null : s(a[0]).split(s(a[1])).join(s(a[2]));
+      case 'LEFT': need(2); return a[0] === null ? null : s(a[0]).slice(0, toNum(a[1]));
+      case 'RIGHT': need(2); return a[0] === null ? null : toNum(a[1]) <= 0 ? '' : s(a[0]).slice(-toNum(a[1]));
+      case 'SUBSTRING': case 'SUBSTR': { need(2, 3); if (a[0] === null) return null; let st = toNum(a[1]); const str = s(a[0]); st = st > 0 ? st - 1 : st < 0 ? str.length + st : 0; return a[2] == null ? str.slice(st) : str.substr(st, toNum(a[2])); }
+      case 'IFNULL': need(2); return a[0] !== null ? a[0] : a[1];
+      case 'COALESCE': { for (const x of a) if (x !== null) return x; return null; }
+      case 'NULLIF': need(2); return a[0] !== null && a[1] !== null && cmpVals(a[0], a[1]) === 0 ? null : a[0];
+      case 'IF': need(3); return truthy(a[0]) ? a[1] : a[2];
+      case 'NOW': case 'CURRENT_TIMESTAMP': case 'SYSDATE': { const d = new Date(), p = x => String(x).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+      case 'CURDATE': case 'CURRENT_DATE': { const d = new Date(), p = x => String(x).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; }
+      case 'YEAR': need(1); return a[0] === null ? null : parseInt(String(a[0]).slice(0, 4), 10);
+      case 'MONTH': need(1); return a[0] === null ? null : parseInt(String(a[0]).slice(5, 7), 10);
+      case 'DAY': need(1); return a[0] === null ? null : parseInt(String(a[0]).slice(8, 10), 10);
+      case 'DATABASE': return this.cur;
+      case 'VERSION': return '8.0.36-simulado';
+      case 'POWER': case 'POW': need(2); return a.some(x => x === null) ? null : clean(Math.pow(toNum(a[0]), toNum(a[1])));
+      case 'MOD': need(2); return a.some(x => x === null) || toNum(a[1]) === 0 ? null : toNum(a[0]) % toNum(a[1]);
+    }
+    throw err(1305, '42000', `A função ${n}() não existe neste simulador.`);
+  }
+  runSelect(sel, parent) {
+    const scope = { src: [], row: null, parent };
+    const savedClause = this.clause;
+    let tuples;
+    if (sel.from) {
+      scope.src.push(this.makeSource(sel.from, parent)); tuples = scope.src[0].rows.map(r => [r]);
+      for (const j of sel.joins) {
+        const s = this.makeSource(j.src, parent); const left = scope.src.slice(); scope.src.push(s);
+        let on = j.on; if (j.using) { const conds = j.using.map(c => { const li = left.findIndex(x => x.cols.some(y => y.n.toLowerCase() === c.toLowerCase())); if (li < 0) throw err(1054, '42S22', `Coluna '${c}' desconhecida em 'from clause'.`); return { k: 'bin', op: '=', l: { k: 'col', t: left[li].alias, c }, r: { k: 'col', t: s.alias, c } }; }); on = conds.reduce((a, b) => ({ k: 'bin', op: 'AND', l: a, r: b })); }
+        const nulls = s.cols.map(() => null); const out = []; this.clause = 'on clause';
+        const ok = (tp) => { if (!on) return true; scope.row = tp; return truthy(this.ev(on, scope, null)); };
+        if (j.type === 'RIGHT') {
+          const lnull = left.map(x => x.cols.map(() => null)); const used = new Set();
+          tuples.forEach((lt, li) => s.rows.forEach((r, ri) => { const tp = lt.concat([r]); if (ok(tp)) { out.push(tp); used.add(ri); } }));
+          s.rows.forEach((r, ri) => { if (!used.has(ri)) out.push(lnull.concat([r])); });
+        } else {
+          for (const lt of tuples) { let m = false; for (const r of s.rows) { const tp = lt.concat([r]); if (ok(tp)) { out.push(tp); m = true; } } if (!m && j.type === 'LEFT') out.push(lt.concat([nulls])); }
+        }
+        tuples = out;
+      }
+    } else tuples = [[]];
+    scope.row = null;
+    /* expande * */
+    const items = [];
+    sel.cols.forEach(c => {
+      if (c.star) {
+        if (!sel.from) throw err(1096, 'HY000', 'Nenhuma tabela usada: o * precisa de um FROM.');
+        let any = false; scope.src.forEach(s => { if (c.t && s.alias.toLowerCase() !== c.t.toLowerCase()) return; any = true; s.cols.forEach(col => items.push({ e: { k: 'col', t: s.alias, c: col.n }, name: col.n, text: col.n, star: true })); });
+        if (!any) throw err(1146, '42S02', `A tabela '${c.t}' não existe nesta consulta.`);
+      } else items.push({ e: c.e, name: c.alias || (c.e.k === 'col' ? null : c.text), text: c.text, alias: c.alias });
+    });
+    const aggMode = sel.group.length > 0 || items.some(i => hasAgg(i.e)) || (sel.having && hasAgg(sel.having)) || sel.order.some(o => hasAgg(o.e));
+    /* aliases */
+    const aliasMap = {}; items.forEach(i => { if (i.alias) aliasMap[i.alias.toLowerCase()] = i.e; });
+    const sub = (e) => {
+      if (!e) return e;
+      if (e.k === 'col' && !e.t && aliasMap[e.c.toLowerCase()]) return aliasMap[e.c.toLowerCase()];
+      switch (e.k) {
+        case 'bin': return { k: 'bin', op: e.op, l: sub(e.l), r: sub(e.r) };
+        case 'not': case 'neg': return { k: e.k, e: sub(e.e) };
+        case 'isnull': case 'istf': return Object.assign({}, e, { e: sub(e.e) });
+        case 'between': return Object.assign({}, e, { e: sub(e.e), a: sub(e.a), b: sub(e.b) });
+        case 'like': return Object.assign({}, e, { e: sub(e.e), p: sub(e.p) });
+        case 'in': return Object.assign({}, e, { e: sub(e.e), list: e.list && e.list.map(sub) });
+        case 'fn': return Object.assign({}, e, { args: e.args.map(sub) });
+        default: return e;
+      }
+    };
+    /* resolve nomes de colunas simples (e valida colunas inexistentes mesmo sem linhas) */
+    this.clause = 'field list'; items.forEach(i => { walk(i.e, x => { if (x.k === 'col') this.resolve(scope, x.t, x.c); }, false); if (i.name == null) { const r = this.resolve(scope, i.e.t, i.e.c); i.name = r.sc.src[r.si].cols[r.ci].n; } });
+    /* WHERE */
+    if (sel.where) {
+      this.clause = 'where clause'; if (hasAgg(sel.where)) throw err(1111, 'HY000', 'Uso inválido de função de agregação no WHERE. Para filtrar resultados de COUNT, SUM, AVG..., use HAVING depois do GROUP BY.');
+      tuples = tuples.filter(tp => { scope.row = tp; return truthy(this.ev(sel.where, scope, null)); });
+    }
+    const groupE = sel.group.map(g => g.k === 'num' ? items[g.v - 1].e : sub(g));
+    const orderE = sel.order.map(o => ({ e: o.e.k === 'num' && o.e.v >= 1 && o.e.v <= items.length ? items[o.e.v - 1].e : sub(o.e), dir: o.dir }));
+    const havingE = sel.having ? sub(sel.having) : null;
+    /* validação de GROUP BY */
+    if (aggMode) {
+      const okCol = (x) => { const r = this.resolve(scope, x.t, x.c); return groupE.some(g => { if (g.k !== 'col') return false; try { const q = this.resolve(scope, g.t, g.c); return q.si === r.si && q.ci === r.ci; } catch (er) { return false; } }) || (() => { const s = scope.src[r.si]; const pkIdx = s.cols.map((c, i) => c.pk ? i : -1).filter(i => i >= 0); return pkIdx.length > 0 && pkIdx.every(pi => groupE.some(g => { if (g.k !== 'col') return false; try { const q = this.resolve(scope, g.t, g.c); return q.si === r.si && q.ci === pi; } catch (er) { return false; } })); })(); };
+      const chk = (e, label) => {
+        const go = (x) => {
+          if (groupE.some(g => same(g, x))) return;
+          if (x.k === 'fn' && AGG.has(x.name)) return;
+          if (x.k === 'col' && !okCol(x)) { if (!sel.group.length) throw err(1140, '42000', `Mistura de colunas comuns com funções de agregação sem GROUP BY: a coluna '${x.c}' (${label}) precisa de GROUP BY ou de uma função como COUNT/MAX.`); throw err(1055, '42000', `A coluna '${x.c}' (${label}) não está no GROUP BY e não está dentro de uma função de agregação. Coloque-a no GROUP BY ou use COUNT, MAX, MIN, AVG, SUM.`); }
+          kids(x).forEach(go);
+        };
+        go(e);
+      };
+      items.forEach((i, n) => chk(i.e, `item ${n + 1} do SELECT`)); if (havingE) chk(havingE, 'HAVING'); orderE.forEach(o => chk(o.e, 'ORDER BY'));
+    } else if (sel.having) { /* HAVING sem agregação age como WHERE */ }
+    /* grupos */
+    let rowsOut; const cols = [];
+    let units;
+    if (aggMode) {
+      this.clause = 'group statement'; const map = new Map();
+      for (const tp of tuples) { scope.row = tp; const key = groupE.map(g => keyOf(this.ev(g, scope, null))).join('\u0001'); if (!map.has(key)) map.set(key, []); map.get(key).push(tp); }
+      if (!groupE.length && !map.size) map.set('', []);
+      units = Array.from(map.values()).map(g => ({ grp: g, first: g[0] || scope.src.map(s => s.cols.map(() => null)) }));
+      if (havingE) { this.clause = 'having clause'; units = units.filter(u => { scope.row = u.first; return truthy(this.ev(havingE, scope, u.grp)); }); }
+    } else {
+      units = tuples.map(tp => ({ grp: null, first: tp }));
+      if (havingE) { this.clause = 'having clause'; units = units.filter(u => { scope.row = u.first; return truthy(this.ev(havingE, scope, null)); }); }
+    }
+    this.clause = 'field list';
+    rowsOut = units.map(u => { scope.row = u.first; return { u, out: items.map(i => this.ev(i.e, scope, u.grp)) }; });
+    if (orderE.length) {
+      this.clause = 'order clause';
+      rowsOut.forEach(r => { scope.row = r.u.first; r.keys = orderE.map(o => this.ev(o.e, scope, r.u.grp)); });
+      rowsOut.sort((a, b) => { for (let i = 0; i < orderE.length; i++) { const x = a.keys[i], y = b.keys[i]; let c; if (x === null && y === null) c = 0; else if (x === null) c = -1; else if (y === null) c = 1; else c = cmpVals(x, y); if (c) return c * orderE[i].dir; } return 0; });
+    }
+    let final = rowsOut.map(r => r.out);
+    if (sel.distinct) { const seen = new Set(); final = final.filter(r => { const k = r.map(keyOf).join('\u0001'); if (seen.has(k)) return false; seen.add(k); return true; }); }
+    if (sel.limit != null) final = final.slice(sel.offset || 0, (sel.offset || 0) + sel.limit);
+    scope.row = null;
+    items.forEach(i => { const sc = this.scaleOf(i.e, scope); cols.push({ name: i.name, scale: sc }); });
+    this.clause = savedClause;
+    return { cols, rows: final };
+  }
+}
+function typeStr(c) {
+  switch (c.type) { case 'int': return c.raw === 'INTEGER' ? 'int' : c.raw.toLowerCase(); case 'decimal': return `decimal(${c.prec},${c.scale})`; case 'varchar': return `varchar(${c.len})`; case 'char': return `char(${c.len})`; case 'float': return c.raw.toLowerCase(); case 'datetime': return c.raw.toLowerCase(); case 'bool': return 'tinyint(1)'; default: return c.type; }
+}
+function ddl(t) {
+  const lines = t.cols.map(c => {
+    let s = `  \`${c.n}\` ${typeStr(c)}`; if (c.nn && !c.pk) s += ' NOT NULL'; else if (c.pk) s += ' NOT NULL'; if (c.ai) s += ' AUTO_INCREMENT';
+    if (c.def !== undefined && c.def !== null) s += ' DEFAULT ' + (typeof c.def === 'number' ? c.def : `'${c.def}'`); else if (!c.nn && !c.pk) s += ' DEFAULT NULL'; return s;
+  });
+  const pk = t.cols.filter(c => c.pk).map(c => '`' + c.n + '`'); if (pk.length) lines.push(`  PRIMARY KEY (${pk.join(',')})`);
+  t.fks.forEach(f => lines.push(`  CONSTRAINT \`${f.name}\` FOREIGN KEY (\`${f.col}\`) REFERENCES \`${f.rt}\` (\`${f.rc}\`)`));
+  return `CREATE TABLE \`${t.name}\` (\n${lines.join(',\n')}\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`;
+}
+function fmtVal(v, scale) {
+  if (v === null || v === undefined) return 'NULL';
+  if (isNum(v)) { if (scale != null) return v.toFixed(scale); return Number.isInteger(v) ? String(v) : String(Number(v.toPrecision(10))); }
+  return String(v);
+}
+/* banco de exemplo: o resultado das 40 etapas do SQL Lab */
+function lojaGames() {
+  const col = (n, type, o) => Object.assign({ n, type, raw: type.toUpperCase(), len: null, prec: null, scale: null, nn: false, ai: false, pk: false, def: undefined, uniq: false }, o || {});
+  const plataformas = { name: 'plataformas', cols: [col('id', 'int', { raw: 'INT', nn: true, ai: true, pk: true }), col('nome', 'varchar', { len: 20, nn: true })], rows: [[1, 'PC'], [2, 'Switch'], [3, 'PS5']], fks: [], ai: 4 };
+  const jogos = { name: 'jogos', cols: [col('id', 'int', { raw: 'INT', nn: true, ai: true, pk: true }), col('nome', 'varchar', { len: 40, nn: true }), col('genero', 'varchar', { len: 20 }), col('preco', 'decimal', { prec: 6, scale: 2, raw: 'DECIMAL' }), col('nota', 'decimal', { prec: 3, scale: 1, raw: 'DECIMAL' }), col('ano', 'int', { raw: 'INT' }), col('plataforma_id', 'int', { raw: 'INT' }), col('estoque', 'int', { raw: 'INT' })],
+    rows: [[1, 'Celeste', 'Plataforma', 49.9, 9.5, 2018, 1, 10], [2, 'Minecraft', 'Aventura', 99.9, 9.0, 2011, 1, 10], [3, 'Hollow Knight', 'Aventura', 46.0, 9.3, 2017, 2, 10], [4, 'Zelda', 'Aventura', 299.0, 10.0, 2017, 2, 10], [5, 'FIFA 24', 'Esporte', 249.0, 7.8, 2023, 3, 10], [7, 'God of War', 'Aventura', 199.0, 9.4, 2018, 3, 10], [8, 'Mario Kart', 'Corrida', 251.1, 9.1, 2014, 2, 10]],
+    fks: [{ col: 'plataforma_id', rt: 'plataformas', rc: 'id', name: 'jogos_ibfk_1' }], ai: 9 };
+  return { loja_games: { plataformas, jogos } };
+}
+root.SQLEngine = { Server, SqlError, split, tokenize, fmtVal, lojaGames, ddl, typeStr, RESERVED };
+if (typeof module !== 'undefined') module.exports = root.SQLEngine;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+'use strict';
+const E = window.SQLEngine;
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ico = (n, cls) => `<svg class="i ${cls || ''}"><use href="#i-${n}"/></svg>`;
+const LS = { get(k, d) { try { const v = localStorage.getItem('sqllab.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('sqllab.' + k, JSON.stringify(v)); } catch (e) { } } };
+const LH = 21, PADTOP = 8;
+const fold = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+/* ---------- desafios (o gabarito roda no banco original, então mudanças no banco não atrapalham) ---------- */
+const CH = [
+  ['Explorar', 'Todos os jogos', 'Mostre todas as colunas e todas as linhas da tabela jogos.', 'Use o * para pedir todas as colunas.', 'SELECT * FROM jogos;'],
+  ['Explorar', 'Só nome e preço', 'Mostre apenas as colunas nome e preco de todos os jogos.', 'Liste as colunas separadas por vírgula, no lugar do *.', 'SELECT nome, preco FROM jogos;'],
+  ['Explorar', 'Dando apelidos', 'Mostre nome com o apelido titulo e preco com o apelido valor.', 'A palavra AS vem depois da coluna: coluna AS apelido.', 'SELECT nome AS titulo, preco AS valor FROM jogos;'],
+  ['Filtrar', 'Jogos de Aventura', 'Mostre só os jogos do gênero Aventura.', 'WHERE vem depois do FROM. Texto vai entre aspas simples.', "SELECT * FROM jogos WHERE genero = 'Aventura';"],
+  ['Filtrar', 'Nota maior que 9', 'Mostre os jogos com nota maior que 9.', 'Compare números com > e não use aspas.', 'SELECT * FROM jogos WHERE nota > 9;'],
+  ['Filtrar', 'Aventura e baratos', 'Mostre os jogos de Aventura que custam menos de 100.', 'Junte as duas condições com AND.', "SELECT * FROM jogos WHERE genero = 'Aventura' AND preco < 100;"],
+  ['Filtrar', 'Esporte ou Corrida', 'Mostre os jogos de Esporte ou de Corrida.', 'Use OR entre as condições.', "SELECT * FROM jogos WHERE genero = 'Esporte' OR genero = 'Corrida';"],
+  ['Filtrar', 'Lista com IN', 'Mostre os jogos lançados em 2017 ou 2018, usando IN.', 'IN (valor1, valor2) troca vários OR.', 'SELECT * FROM jogos WHERE ano IN (2017, 2018);'],
+  ['Filtrar', 'Preço entre 40 e 100', 'Mostre os jogos com preço entre 40 e 100.', 'BETWEEN a AND b inclui os dois extremos.', 'SELECT * FROM jogos WHERE preco BETWEEN 40 AND 100;'],
+  ['Filtrar', 'Nome começa com M', 'Mostre os jogos cujo nome começa com a letra M.', "LIKE 'M%': o % significa qualquer coisa depois.", "SELECT * FROM jogos WHERE nome LIKE 'M%';"],
+  ['Ordenar e resumir', 'Maiores notas primeiro', 'Mostre nome e nota de todos os jogos, da maior nota para a menor.', 'ORDER BY coluna DESC vai no final.', 'SELECT nome, nota FROM jogos ORDER BY nota DESC;', true],
+  ['Ordenar e resumir', 'Os 3 mais caros', 'Mostre nome e preco dos 3 jogos mais caros.', 'Ordene por preço decrescente e corte com LIMIT.', 'SELECT nome, preco FROM jogos ORDER BY preco DESC LIMIT 3;', true],
+  ['Ordenar e resumir', 'Gêneros sem repetir', 'Mostre cada gênero uma única vez.', 'DISTINCT vem logo depois do SELECT.', 'SELECT DISTINCT genero FROM jogos;'],
+  ['Ordenar e resumir', 'Contando jogos', 'Descubra quantos jogos existem na tabela.', 'COUNT(*) conta as linhas.', 'SELECT COUNT(*) FROM jogos;'],
+  ['Ordenar e resumir', 'Média e máximo', 'Em um único SELECT, mostre a média das notas e o preço mais alto.', 'AVG(coluna) e MAX(coluna), separados por vírgula.', 'SELECT AVG(nota), MAX(preco) FROM jogos;'],
+  ['Ordenar e resumir', 'Jogos por gênero', 'Mostre cada gênero e quantos jogos ele tem.', 'Selecione o gênero e COUNT(*), depois GROUP BY genero.', 'SELECT genero, COUNT(*) FROM jogos GROUP BY genero;'],
+  ['Ordenar e resumir', 'Gêneros com mais de 1 jogo', 'Mostre só os gêneros que têm mais de 1 jogo.', 'Filtro sobre grupos usa HAVING, não WHERE.', 'SELECT genero, COUNT(*) FROM jogos GROUP BY genero HAVING COUNT(*) > 1;'],
+  ['Ordenar e resumir', 'Valor do estoque', 'Quanto vale o estoque inteiro? Some preco vezes estoque de todos os jogos.', 'SUM(preco * estoque) faz a conta linha a linha e soma.', 'SELECT SUM(preco * estoque) FROM jogos;'],
+  ['Juntar tabelas', 'Jogo e plataforma', 'Mostre o nome de cada jogo ao lado do nome da plataforma.', 'JOIN plataformas p ON j.plataforma_id = p.id. Use j.nome e p.nome.', 'SELECT j.nome, p.nome AS plataforma FROM jogos j JOIN plataformas p ON j.plataforma_id = p.id;'],
+  ['Juntar tabelas', 'JOIN com filtro e ordem', 'Mostre jogo e plataforma só dos jogos com nota maior que 9, da maior nota para a menor.', 'JOIN primeiro, depois WHERE, depois ORDER BY.', 'SELECT j.nome, p.nome AS plataforma FROM jogos j JOIN plataformas p ON j.plataforma_id = p.id WHERE j.nota > 9 ORDER BY j.nota DESC;', true],
+  ['Juntar tabelas', 'Jogos por plataforma', 'Mostre o nome de cada plataforma e quantos jogos ela tem.', 'JOIN, COUNT(*) e GROUP BY p.nome.', 'SELECT p.nome, COUNT(*) FROM plataformas p JOIN jogos j ON j.plataforma_id = p.id GROUP BY p.nome;'],
+  ['Juntar tabelas', 'Relatório final', 'Nome da plataforma, quantidade de jogos e média das notas, só das plataformas com mais de 1 jogo, da maior média para a menor.', 'COUNT, AVG, GROUP BY, HAVING e ORDER BY ... DESC, nessa ordem.', 'SELECT p.nome, COUNT(*) AS qtd, AVG(j.nota) AS media FROM plataformas p JOIN jogos j ON j.plataforma_id = p.id GROUP BY p.nome HAVING COUNT(*) > 1 ORDER BY media DESC;', true],
+  ['Juntar tabelas', 'Mais caros que a média', 'Extra: mostre nome e preco dos jogos mais caros que o preço médio de todos.', 'Uma consulta dentro de parênteses pode calcular a média: preco > (SELECT AVG(preco) ...).', 'SELECT nome, preco FROM jogos WHERE preco > (SELECT AVG(preco) FROM jogos);'],
+].map((c, i) => ({ id: i + 1, lv: c[0], title: c[1], ask: c[2], hint: c[3], sql: c[4], ordered: !!c[5] }));
+
+const KW = new Set('SELECT FROM WHERE AND OR NOT IN IS NULL LIKE BETWEEN ORDER BY GROUP HAVING LIMIT OFFSET AS DISTINCT JOIN INNER LEFT RIGHT OUTER CROSS ON USING INSERT INTO VALUES UPDATE SET DELETE CREATE DROP ALTER TABLE DATABASE SCHEMA SHOW DATABASES TABLES DESCRIBE DESC ASC USE PRIMARY KEY FOREIGN REFERENCES AUTO_INCREMENT DEFAULT INT INTEGER BIGINT VARCHAR CHAR DECIMAL DATE DATETIME TIMESTAMP TEXT FLOAT DOUBLE BOOLEAN UNSIGNED ADD COLUMN MODIFY RENAME TO CASE WHEN THEN ELSE END IF EXISTS TRUNCATE UNIQUE CONSTRAINT COLUMNS FIELDS DIV MOD TRUE FALSE FIRST AFTER'.split(' '));
+const FN = 'COUNT SUM AVG MIN MAX ROUND CEIL FLOOR ABS UPPER LOWER LENGTH CONCAT IFNULL COALESCE NULLIF NOW CURDATE YEAR MONTH DAY SUBSTRING TRIM REPLACE LEFT RIGHT DATABASE VERSION'.split(' ');
+const DEFAULT_TEXT = '-- Bem-vindo ao SQL Lab Workbench!\n-- Ctrl + Enter executa a instrução onde o cursor está.\n-- Clique em "Desafios" para treinar com perguntas prontas.\n\nSELECT * FROM jogos;';
+
+/* ---------- estado ---------- */
+const PRISTINE = E.lojaGames();
+let srv = E.Server.fresh(PRISTINE, 'loja_games');
+let tabs = LS.get('tabs', null);
+if (!Array.isArray(tabs) || !tabs.length || !tabs.every(t => t && typeof t.text === 'string')) tabs = [{ name: 'Consulta 1', text: DEFAULT_TEXT }];
+let active = Math.min(Math.max(0, LS.get('active', 0) | 0), tabs.length - 1);
+let tabSeq = Math.max(tabs.length, LS.get('seq', tabs.length));
+let solved = new Set(LS.get('solved', []));
+let activeCh = LS.get('activeCh', null);
+let logs = [], logN = 0;
+let errStart = null;
+let expanded = new Set(['db:loja_games', 'tbl:jogos']);
+let selTable = null;
+let view = 'sql';
+const saveTabs = () => { LS.set('tabs', tabs.map(t => ({ name: t.name, text: t.text, auto: !!t.auto }))); LS.set('active', active); LS.set('seq', tabSeq); };
+
+/* ---------- elementos ---------- */
+const ta = $('#ta'), hl = $('#hl'), gut = $('#gut'), gutin = $('#gutin'), band = $('#band'), acEl = $('#ac');
+let tableNames = new Set(), colNames = new Set();
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2600); }
+
+/* ---------- realce de sintaxe ---------- */
+const TOK = /(--[^\n]*|#[^\n]*|\/\*[\s\S]*?(?:\*\/|$))|('(?:[^'\\\n]|\\.|'')*'?|"(?:[^"\\\n]|\\.)*"?)|(`[^`\n]*`?)|(\d+(?:\.\d+)?)|([A-Za-zÀ-ÿ_][\wÀ-ÿ$]*)|(\s+)|([\s\S])/g;
+function highlight(text) {
+  let out = ''; TOK.lastIndex = 0; let m;
+  while ((m = TOK.exec(text))) {
+    if (m[1]) out += `<span class="m">${esc(m[1])}</span>`;
+    else if (m[2]) out += `<span class="s">${esc(m[2])}</span>`;
+    else if (m[3]) out += `<span class="t">${esc(m[3])}</span>`;
+    else if (m[4]) out += `<span class="n">${m[4]}</span>`;
+    else if (m[5]) {
+      const w = m[5], u = w.toUpperCase(), rest = text.slice(TOK.lastIndex, TOK.lastIndex + 40);
+      if (/^\s*\(/.test(rest) && (FN.includes(u) || !KW.has(u))) out += `<span class="f">${esc(w)}</span>`;
+      else if (KW.has(u)) out += `<span class="k">${esc(w)}</span>`;
+      else if (tableNames.has(w.toLowerCase())) out += `<span class="t">${esc(w)}</span>`;
+      else if (colNames.has(w.toLowerCase())) out += `<span class="c">${esc(w)}</span>`;
+      else out += esc(w);
+    } else out += esc(m[0]);
+  }
+  return out;
+}
+function lineOf(text, pos) { let n = 0; for (let i = 0; i < pos && i < text.length; i++) if (text.charCodeAt(i) === 10) n++; return n; }
+function stmtIndexAt(stmts, pos) {
+  let idx = stmts.findIndex(s => pos >= s.start && pos <= s.end); if (idx >= 0) return idx;
+  for (let i = stmts.length - 1; i >= 0; i--) if (stmts[i].end < pos) return i;
+  return 0;
+}
+function renderEditor() {
+  const text = ta.value;
+  hl.innerHTML = highlight(text) + '\n ';
+  const stmts = E.split(text), nl = text.split('\n').length;
+  const cur = stmts.length ? stmtIndexAt(stmts, ta.selectionStart) : -1;
+  const startLine = {}; stmts.forEach((s, i) => { startLine[lineOf(text, s.start)] = i; });
+  let g = '';
+  for (let i = 0; i < nl; i++) {
+    const si = startLine[i];
+    let cls = 'gl'; if (si !== undefined) { if (si === cur) cls += ' cs'; if (errStart != null && stmts[si].start === errStart) cls += ' er'; }
+    g += `<div class="${cls}">${si !== undefined ? `<button class="go" data-s="${si}" tabindex="-1" aria-label="Executar esta instrução"><svg class="i"><use href="#i-play"/></svg></button>` : ''}${i + 1}</div>`;
+  }
+  gutin.innerHTML = g;
+  if (cur >= 0) { const s = stmts[cur], a = lineOf(text, s.start), b = lineOf(text, Math.max(s.start, s.end - 1)); band.style.top = (PADTOP + a * LH) + 'px'; band.style.height = ((b - a + 1) * LH) + 'px'; band.style.display = ''; } else band.style.display = 'none';
+  syncScroll();
+}
+function syncScroll() {
+  hl.scrollTop = ta.scrollTop; hl.scrollLeft = ta.scrollLeft;
+  gutin.style.transform = `translateY(${-ta.scrollTop}px)`; band.style.transform = `translateY(${-ta.scrollTop}px)`;
+}
+function refreshNames() {
+  tableNames = new Set(); colNames = new Set(); const d = srv.cur && srv.getDb(srv.cur);
+  if (d) Object.values(d.tables).forEach(t => { tableNames.add(t.name.toLowerCase()); t.cols.forEach(c => colNames.add(c.n.toLowerCase())); });
+}
+function onInput(ev) {
+  tabs[active].text = ta.value; errStart = null; saveTabs(); renderEditor();
+  if (ev && ev.inputType && /^insert/.test(ev.inputType) && ev.inputType !== 'insertLineBreak') showAC(false); else hideAC();
+}
+
+/* ---------- autocompletar ---------- */
+let ac = { items: [], sel: 0, start: 0 };
+function hideAC() { acEl.classList.remove('on'); ac.items = []; }
+function aliasMap(text) {
+  const map = {}; const re = /\b(?:from|join)\s+([A-Za-z_]\w*)(?:\s+(?:as\s+)?([A-Za-z_]\w*))?/gi; let m;
+  while ((m = re.exec(text))) { map[m[1].toLowerCase()] = m[1]; if (m[2] && !KW.has(m[2].toUpperCase())) map[m[2].toLowerCase()] = m[1]; }
+  return map;
+}
+function showAC(force) {
+  const pos = ta.selectionStart; if (ta.selectionEnd !== pos) return hideAC();
+  const before = ta.value.slice(0, pos); const wm = /([A-Za-zÀ-ÿ_][\wÀ-ÿ]*)$/.exec(before);
+  const word = wm ? wm[1] : ''; const start = pos - word.length; const pre = before.slice(0, start);
+  const db = srv.cur && srv.getDb(srv.cur); const tables = db ? Object.values(db.tables) : [];
+  let items = [];
+  const dot = /([A-Za-z_]\w*)\.$/.exec(pre);
+  if (dot) {
+    const map = aliasMap(ta.value); const real = map[dot[1].toLowerCase()] || dot[1];
+    const t = tables.find(x => x.name.toLowerCase() === real.toLowerCase());
+    if (t) items = t.cols.map(c => ({ t: c.n, k: 'coluna ' + t.name }));
+  } else {
+    if (!force && word.length < 2) return hideAC();
+    const prev = /([A-Za-z_]+)\s*$/.exec(pre); const pw = prev ? prev[1].toUpperCase() : '';
+    const tbl = tables.map(t => ({ t: t.name, k: 'tabela' }));
+    if (['FROM', 'JOIN', 'INTO', 'UPDATE', 'TABLE', 'DESCRIBE', 'DESC'].includes(pw)) items = tbl;
+    else {
+      const seen = new Set(); const cols = []; tables.forEach(t => t.cols.forEach(c => { if (!seen.has(c.n.toLowerCase())) { seen.add(c.n.toLowerCase()); cols.push({ t: c.n, k: 'coluna' }); } }));
+      items = cols.concat(tbl, FN.map(f => ({ t: f, k: 'função', fn: true })), Array.from(KW).map(k => ({ t: k, k: 'palavra', kw: true })));
+    }
+  }
+  const w = fold(word);
+  items = items.filter(i => fold(i.t).startsWith(w) && fold(i.t) !== w).slice(0, 8);
+  if (!items.length) return hideAC();
+  ac = { items, sel: 0, start };
+  renderAC(); positionAC(pos);
+}
+function renderAC() {
+  acEl.innerHTML = ac.items.map((i, n) => `<div role="option" data-n="${n}" aria-selected="${n === ac.sel}">${esc(i.kw || i.fn ? i.t.toUpperCase() : i.t)}<small>${esc(i.k)}</small></div>`).join('');
+  acEl.classList.add('on');
+}
+function positionAC(pos) {
+  let meas = $('#meas'); if (!meas) { meas = document.createElement('span'); meas.id = 'meas'; meas.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;font:13.5px var(--mono)'; meas.textContent = '0000000000'; $('#codebox').appendChild(meas); }
+  const cw = meas.getBoundingClientRect().width / 10 || 8.1;
+  const before = ta.value.slice(0, pos).split('\n'); const line = before.length - 1, col = before[before.length - 1].length;
+  const box = $('#codebox').getBoundingClientRect();
+  let x = 14 + col * cw - ta.scrollLeft - (ac.items.length ? 0 : 0), y = PADTOP + (line + 1) * LH - ta.scrollTop + 2;
+  acEl.style.left = Math.max(4, Math.min(x, box.width - 230)) + 'px';
+  const h = acEl.offsetHeight; acEl.style.top = (y + h > box.height ? Math.max(4, y - LH - h) : y) + 'px';
+}
+function acceptAC(n) {
+  const it = ac.items[n]; if (!it) return; const txt = it.kw || it.fn ? it.t.toUpperCase() : it.t; const pos = ta.selectionStart;
+  ta.value = ta.value.slice(0, ac.start) + txt + ta.value.slice(pos); const np = ac.start + txt.length; ta.setSelectionRange(np, np); hideAC(); onInput(null);
+}
+
+/* ---------- formatar ---------- */
+function formatStmt(sql) {
+  const toks = []; let m; TOK.lastIndex = 0; while ((m = TOK.exec(sql))) toks.push({ m, end: TOK.lastIndex });
+  const isSelect = /^\s*(?:(?:--[^\n]*|#[^\n]*|\/\*[\s\S]*?\*\/)\s*)*select\b/i.test(sql);
+  const NOBREAK = ['INNER', 'LEFT', 'RIGHT', 'CROSS', 'OUTER'];
+  let out = '', depth = 0, clause = '', prev = '', pt = 'start', between = false, fnCall = false, started = false;
+  const trim = () => { out = out.replace(/ +$/, ''); };
+  const sp = () => { if (out && !/[\s(.]$/.test(out)) out += ' '; };
+  const nl = ind => { trim(); if (out && !out.endsWith('\n')) out += '\n'; out += ind || ''; };
+  const isOp = c => /[=<>!+\-*\/%]/.test(c);
+  for (let i = 0; i < toks.length; i++) {
+    const t = toks[i].m, txt = t[0];
+    if (t[6]) continue;
+    if (t[1]) { sp(); out += txt; if (/^(--|#)/.test(txt)) out += '\n'; pt = 'cm'; continue; }
+    if (t[2] || t[3] || t[4]) { sp(); out += txt; pt = 'val'; fnCall = false; continue; }
+    if (t[5]) {
+      const u = txt.toUpperCase(), paren = /^\s*\(/.test(sql.slice(toks[i].end, toks[i].end + 20));
+      const kw = KW.has(u) || (FN.includes(u) && paren);
+      if (isSelect && depth === 0 && started) {
+        if (['FROM', 'WHERE', 'HAVING', 'LIMIT', 'GROUP', 'ORDER', 'INNER', 'LEFT', 'RIGHT', 'CROSS'].includes(u) && !(u === 'LEFT' || u === 'RIGHT' ? paren : false)) nl();
+        else if (u === 'JOIN' && !NOBREAK.includes(prev)) nl();
+        else if ((u === 'AND' || u === 'OR') && (clause === 'WHERE' || clause === 'HAVING')) { if (u === 'AND' && between) between = false; else nl('  '); }
+        if (u === 'BETWEEN') between = true;
+        if (['FROM', 'WHERE', 'HAVING', 'GROUP', 'ORDER', 'LIMIT'].includes(u)) clause = u;
+      }
+      if (u === 'SELECT') started = true;
+      sp(); out += kw ? u : txt; prev = u; pt = kw && KW.has(u) ? 'kw' : 'word';
+      fnCall = paren && (FN.includes(u) || !KW.has(u)); continue;
+    }
+    if (txt === '(') { if (!fnCall) sp(); out += '('; depth++; pt = 'open'; fnCall = false; continue; }
+    if (txt === ')') { trim(); out += ')'; depth = Math.max(0, depth - 1); pt = 'close'; continue; }
+    if (txt === ',') { trim(); out += ', '; pt = 'comma'; continue; }
+    if (txt === ';') { trim(); out += ';'; pt = 'end'; continue; }
+    if (txt === '.') { trim(); out += '.'; pt = 'dot'; continue; }
+    if (isOp(txt)) {
+      let op = txt; while (i + 1 < toks.length && isOp(toks[i + 1].m[0]) && !'*'.includes(toks[i + 1].m[0]) && op.length < 2 && !(toks[i + 1].m[0] === '-' )) { i++; op += toks[i].m[0]; }
+      const star = op === '*' && (pt === 'open' || pt === 'comma' || pt === 'dot' || prev === 'SELECT');
+      const unary = (op === '-' || op === '+') && (pt === 'open' || pt === 'comma' || pt === 'op' || pt === 'kw' || pt === 'start');
+      sp(); out += op; if (!star && !unary) out += ' '; pt = star ? 'val' : 'op'; prev = ''; continue;
+    }
+    sp(); out += txt; pt = 'val';
+  }
+  return out.replace(/ +\n/g, '\n').trim();
+}
+function formatAll() {
+  const text = ta.value; const stmts = E.split(text); if (!stmts.length) return;
+  let out = '', prev = 0;
+  stmts.forEach(s => { out += text.slice(prev, s.start) + formatStmt(s.text); prev = s.end; });
+  out += text.slice(prev);
+  ta.value = out; onInput(null); toast('Texto organizado.');
+}
+
+/* ---------- execução ---------- */
+function oneLine(s) { return s.replace(/--[^\n]*/g, '').replace(/\s+/g, ' ').trim(); }
+function nowStr() { const d = new Date(), p = x => String(x).padStart(2, '0'); return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+function exec(text, base) {
+  const res = srv.run(text);
+  if (!res.length) { toast('Escreva um comando SQL primeiro.'); return; }
+  res.forEach(r => { logN++; logs.unshift({ n: logN, time: nowStr(), sql: oneLine(r.sql), full: r.sql, ok: r.ok, msg: r.ok ? r.msg : `Erro ${r.code}: ${r.error}`, ms: r.ms }); if (!r.ok) errStart = (base || 0) + r.start; });
+  if (logs.length > 200) logs.length = 200;
+  if (res.every(r => r.ok)) errStart = null;
+  const t = tabs[active]; const items = res; let sel = items.length - 1;
+  for (let i = items.length - 1; i >= 0; i--) if (items[i].type === 'rows' || !items[i].ok) { sel = i; break; }
+  t.rs = { items, sel };
+  refreshAll(); renderEditor(); renderResults(); checkChallenge(res);
+}
+function runCurrent() {
+  hideAC(); const sel = ta.value.slice(ta.selectionStart, ta.selectionEnd);
+  if (sel.trim()) return exec(sel, ta.selectionStart);
+  const st = E.split(ta.value); if (!st.length) return toast('Escreva um comando SQL primeiro.');
+  const s = st[stmtIndexAt(st, ta.selectionStart)]; exec(s.text, s.start);
+}
+function runAll() { hideAC(); exec(ta.value, 0); }
+
+/* ---------- resultados ---------- */
+const fmtTime = s => (s < 0.001 ? '0,000' : s.toFixed(3).replace('.', ',')) + ' s';
+function gridHTML(r) {
+  const nums = r.cols.map((c, i) => r.rows.length > 0 && r.rows.every(row => row[i] === null || typeof row[i] === 'number'));
+  let h = '<table class="g"><thead><tr><th class="rn">#</th>' + r.cols.map(c => `<th>${esc(c.name)}</th>`).join('') + '</tr></thead><tbody>';
+  const max = Math.min(r.rows.length, 1000);
+  for (let i = 0; i < max; i++) {
+    h += `<tr><td class="rn">${i + 1}</td>` + r.rows[i].map((v, j) => v === null ? '<td class="nul">NULL</td>' : `<td class="${nums[j] ? 'num' : ''}" title="${typeof v === 'string' && v.length > 40 ? esc(v) : ''}">${esc(E.fmtVal(v, r.cols[j].scale))}</td>`).join('') + '</tr>';
+  }
+  return h + '</tbody></table>';
+}
+function renderResults() {
+  const t = tabs[active], rs = t.rs; const rtabs = $('#rtabs'), rbody = $('#rbody'), rfoot = $('#rfoot');
+  let nth = 0, th = '';
+  if (rs) rs.items.forEach((r, i) => {
+    let label; if (!r.ok) label = 'Erro'; else if (r.type === 'rows') label = 'Resultado ' + (++nth); else label = 'Comando ' + (i + 1);
+    th += `<button class="rt" role="tab" data-i="${i}" aria-selected="${rs.sel === i}"><span class="dot ${r.ok ? '' : 'bad'}"></span>${label}</button>`;
+  });
+  th += `<button class="rt" role="tab" data-i="out" aria-selected="${rs && rs.sel === 'out' || (!rs && false)}">Saída de ações <span class="cnt">${logs.length}</span></button>`;
+  rtabs.innerHTML = th;
+  if (!rs) { rbody.innerHTML = '<div class="empty"><div>Execute uma instrução para ver o resultado aqui.<br><small>Dica: clique na instrução e aperte Ctrl + Enter.</small></div></div>'; rfoot.innerHTML = '<span>Pronto.</span>'; return; }
+  if (rs.sel === 'out') {
+    rbody.innerHTML = logs.length ? '<table class="out"><thead><tr><th>#</th><th></th><th>Hora</th><th>Ação</th><th>Mensagem</th><th>Duração</th><th></th></tr></thead><tbody>' + logs.map((l, i) => `<tr><td>${l.n}</td><td><span class="st ${l.ok ? '' : 'bad'}"><svg class="i"><use href="#i-${l.ok ? 'check' : 'x'}"/></svg></span></td><td>${l.time}</td><td class="q" title="${esc(l.sql)}">${esc(l.sql)}</td><td>${esc(l.msg)}</td><td>${fmtTime(l.ms)}</td><td><button data-re="${i}">Reutilizar</button></td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Nada executado ainda.</div>';
+    rfoot.innerHTML = `<span>${logs.length} ação(ões) registrada(s)</span>`; return;
+  }
+  const r = rs.items[rs.sel];
+  if (!r.ok) {
+    rbody.innerHTML = `<div class="msg bad">${ico('warn')}<div><h4>Erro ${r.code} (${esc(r.state)})</h4><p>${esc(r.error)}</p><code>${esc(r.sql)}</code></div></div>`;
+    rfoot.innerHTML = '<span style="color:var(--err)">A instrução não foi executada.</span>'; return;
+  }
+  if (r.type === 'rows') {
+    rbody.innerHTML = r.rows.length ? gridHTML(r) : `<div class="msg">${ico('check')}<div><h4>Nenhuma linha encontrada</h4><p>A consulta rodou, mas nenhuma linha atende às condições.</p><code>${esc(r.sql)}</code></div></div>`;
+    rfoot.innerHTML = `<span>${r.rows.length} linha(s) · ${fmtTime(r.ms)}${r.rows.length > 1000 ? ' · mostrando 1000' : ''}</span><span class="sp"></span><button id="b-copy">${ico('copy')}Copiar tabela</button>`;
+  } else {
+    rbody.innerHTML = `<div class="msg ok">${ico('check')}<div><h4>Comando executado</h4><p>${esc(r.msg)}</p><code>${esc(r.sql)}</code></div></div>`;
+    rfoot.innerHTML = `<span>${fmtTime(r.ms)}</span>`;
+  }
+}
+function copyGrid() {
+  const rs = tabs[active].rs; if (!rs) return; const r = rs.items[rs.sel]; if (!r || r.type !== 'rows') return;
+  const txt = [r.cols.map(c => c.name).join('\t')].concat(r.rows.map(row => row.map((v, i) => v === null ? 'NULL' : E.fmtVal(v, r.cols[i].scale)).join('\t'))).join('\n');
+  const fallback = () => { const x = document.createElement('textarea'); x.value = txt; x.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(x); x.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (e) { } x.remove(); toast(ok ? 'Tabela copiada.' : 'Não foi possível copiar aqui.'); };
+  try { navigator.clipboard.writeText(txt).then(() => toast('Tabela copiada.'), fallback); } catch (e) { fallback(); }
+}
+
+/* ---------- abas de consulta ---------- */
+function renderTabs() {
+  $('#qtabs').innerHTML = tabs.map((t, i) => `<div class="qt" role="tab" tabindex="0" data-i="${i}" aria-selected="${i === active}">${esc(t.name)}${tabs.length > 1 ? `<button data-x="${i}" aria-label="Fechar ${esc(t.name)}">${ico('x')}</button>` : ''}</div>`).join('') + `<button class="qadd" id="q-add" aria-label="Nova consulta">${ico('plus')}</button>`;
+}
+function switchTab(i) { active = i; ta.value = tabs[i].text; errStart = null; saveTabs(); renderTabs(); renderEditor(); renderResults(); hideAC(); }
+function newTab(text, auto) { tabSeq++; tabs.push({ name: 'Consulta ' + tabSeq, text: text || '', auto: !!auto }); switchTab(tabs.length - 1); }
+function closeTab(i) { tabs.splice(i, 1); if (active >= tabs.length) active = tabs.length - 1; else if (i < active) active--; switchTab(active); }
+
+/* ---------- navegador ---------- */
+function refreshAll() { refreshNames(); renderTree(); renderInfo(); $('#chip-db').textContent = srv.cur || '(nenhum)'; if (view === 'eer') drawEER(); }
+function renderTree() {
+  const q = fold($('#filter').value.trim()); let h = '';
+  srv.dbNames().forEach(name => {
+    const d = srv.getDb(name); const key = 'db:' + name; const cur = srv.cur && name.toLowerCase() === srv.cur.toLowerCase(); const real = !!d;
+    const tabsList = d ? Object.values(d.tables).sort((a, b) => a.name.localeCompare(b.name)) : [];
+    const match = t => !q || fold(t.name).includes(q) || t.cols.some(c => fold(c.n).includes(q));
+    const shown = tabsList.filter(match); if (q && real && !shown.length) return;
+    if (q && !real) return;
+    const open = expanded.has(key) || !!q;
+    h += `<div role="treeitem"><button class="tn ${open ? 'open' : ''} ${cur ? 'cur' : ''} ${real ? '' : 'dim'}" data-k="${esc(key)}" data-db="${esc(name)}"><span class="ch">${ico('chev')}</span>${ico('db')}<span class="nm">${esc(name)}</span>${real ? `<span class="ty">${tabsList.length}</span>` : ''}</button>`;
+    if (open) {
+      h += '<div class="kids">';
+      if (!real) h += '<div class="tn dim" style="cursor:default"><span class="ch"></span><span class="nm">sem tabelas para consultar</span></div>';
+      else if (!shown.length) h += '<div class="tn dim" style="cursor:default"><span class="ch"></span><span class="nm">nenhuma tabela ainda</span></div>';
+      shown.forEach(t => {
+        const tk = 'tbl:' + t.name; const to = expanded.has(tk) || (!!q && t.cols.some(c => fold(c.n).includes(q)));
+        h += `<button class="tn ${to ? 'open' : ''} ${selTable === t.name && cur ? 'sel' : ''}" data-k="${esc(tk)}" data-t="${esc(t.name)}" data-db="${esc(name)}"><span class="ch">${ico('chev')}</span>${ico('tbl')}<span class="nm">${esc(t.name)}</span><span class="tact" data-run="${esc(t.name)}" role="button" tabindex="0" title="Ver os dados desta tabela" aria-label="Ver dados de ${esc(t.name)}">${ico('play')}</span></button>`;
+        if (to) {
+          h += '<div class="kids">';
+          const fk = new Set(t.fks.map(f => f.col));
+          t.cols.forEach(c => { if (q && !fold(c.n).includes(q) && !fold(t.name).includes(q)) return; h += `<div class="tn" style="cursor:default" data-t="${esc(t.name)}"><span class="ch"></span>${c.pk ? ico('key', 'k-pk') : fk.has(c.n) ? ico('fk', 'k-fk') : ico('col')}<span class="nm">${esc(c.n)}</span><span class="ty">${esc(E.typeStr(c))}</span></div>`; });
+          h += '</div>';
+        }
+      });
+      h += '</div>';
+    }
+    h += '</div>';
+  });
+  $('#tree').innerHTML = h || '<div class="empty">Nada encontrado.</div>';
+}
+function renderInfo() {
+  const d = srv.cur && srv.getDb(srv.cur); const t = d && selTable && Object.values(d.tables).find(x => x.name === selTable);
+  const el = $('#info');
+  if (!t) { el.innerHTML = d ? `<b>Schema ${esc(d.name)}</b><br>${Object.keys(d.tables).length} tabela(s). Clique em uma tabela para ver os detalhes ou dê um clique duplo para abrir os dados.` : 'Nenhum banco selecionado. Use <code>USE loja_games;</code>'; return; }
+  const pk = t.cols.filter(c => c.pk).map(c => c.n).join(', ');
+  el.innerHTML = `<b>Tabela ${esc(t.name)}</b><br>${t.rows.length} linha(s) · ${t.cols.length} coluna(s)${pk ? ` · chave <code>${esc(pk)}</code>` : ''}<br>${t.cols.some(c => c.ai) ? `Próximo id automático: <code>${t.ai}</code><br>` : ''}${t.fks.length ? t.fks.map(f => `<code>${esc(f.col)}</code> → <code>${esc(f.rt)}.${esc(f.rc)}</code>`).join('<br>') : 'Sem chaves estrangeiras.'}`;
+}
+function openTableData(name) {
+  const text = `SELECT * FROM ${name};`;
+  if (tabs[active].auto || !tabs[active].text.trim()) { tabs[active].auto = true; ta.value = text; tabs[active].text = text; saveTabs(); }
+  else { tabSeq++; tabs.push({ name: 'Consulta ' + tabSeq, text, auto: true }); active = tabs.length - 1; ta.value = text; saveTabs(); }
+  renderTabs(); setView('sql'); if (matchMedia('(max-width:900px)').matches) setPane('sql'); exec(text, 0);
+}
+
+/* ---------- diagrama ---------- */
+const BW = 232, RH = 24, HH = 34; let pos = {}, zoom = 1;
+function drawEER() {
+  const d = srv.cur && srv.getDb(srv.cur); const svg = $('#eersvg'); $('#eer-db').textContent = d ? '· ' + d.name : '';
+  if (!d || !Object.keys(d.tables).length) { svg.setAttribute('width', 400); svg.setAttribute('height', 160); svg.innerHTML = `<text x="24" y="60" class="tr" style="font-family:var(--ui)">Este banco ainda não tem tabelas.</text><text x="24" y="86" class="ty" style="font-family:var(--ui)">Crie uma com CREATE TABLE e o diagrama aparece aqui.</text>`; return; }
+  const tabsL = Object.values(d.tables).sort((a, b) => a.fks.length - b.fks.length || a.name.localeCompare(b.name));
+  const W = $('#eerbox').clientWidth || 800; const cols = Math.max(1, Math.min(3, Math.floor((W - 40) / (BW + 90)))); const colY = new Array(cols).fill(40);
+  tabsL.forEach((t, i) => { if (!pos[t.name]) { const c = i % cols; pos[t.name] = { x: 40 + c * (BW + 110), y: colY[c] }; colY[c] += HH + t.cols.length * RH + 50; } });
+  Object.keys(pos).forEach(k => { if (!d.tables[k]) delete pos[k]; });
+  const tb = n => d.tables[n]; let edges = '', boxes = '', maxX = 0, maxY = 0;
+  tabsL.forEach(t => { t.fks.forEach(f => {
+    const p = tb(f.rt); if (!p || !pos[p.name]) return; const c = pos[t.name], q = pos[p.name];
+    const ci = t.cols.findIndex(x => x.n === f.col), pi = p.cols.findIndex(x => x.n === f.rc);
+    const y1 = c.y + HH + ci * RH + RH / 2, y2 = q.y + HH + pi * RH + RH / 2; let x1, x2, d1, d2, path;
+    if (c.x >= q.x + BW + 50) { x1 = c.x; x2 = q.x + BW; d1 = -1; d2 = 1; const mx = (x1 + x2) / 2; path = `M${x1},${y1} H${mx} V${y2} H${x2}`; }
+    else if (c.x + BW + 50 <= q.x) { x1 = c.x + BW; x2 = q.x; d1 = 1; d2 = -1; const mx = (x1 + x2) / 2; path = `M${x1},${y1} H${mx} V${y2} H${x2}`; }
+    else { x1 = c.x + BW; x2 = q.x + BW; d1 = 1; d2 = 1; const xo = Math.max(x1, x2) + 44; path = `M${x1},${y1} H${xo} V${y2} H${x2}`; }
+    edges += `<path class="edge" d="${path}"/>`;
+    edges += `<path class="ed" d="M${x1},${y1 - 7} L${x1 + d1 * 13},${y1} M${x1},${y1 + 7} L${x1 + d1 * 13},${y1} M${x1},${y1} H${x1 + d1 * 13}"/>`;
+    edges += `<path class="ed" d="M${x2 + d2 * 10},${y2 - 7} V${y2 + 7} M${x2 + d2 * 16},${y2 - 7} V${y2 + 7}"/>`;
+  }); });
+  tabsL.forEach(t => {
+    const p = pos[t.name], h = HH + t.cols.length * RH; const fk = new Set(t.fks.map(f => f.col));
+    maxX = Math.max(maxX, p.x + BW + 90); maxY = Math.max(maxY, p.y + h + 50);
+    let g = `<g class="tbl" data-t="${esc(t.name)}" transform="translate(${p.x},${p.y})"><rect class="tb" width="${BW}" height="${h}" rx="9"/><path class="th" d="M0,9 a9,9 0 0 1 9,-9 H${BW - 9} a9,9 0 0 1 9,9 V${HH} H0Z"/><text class="tt" x="14" y="22">${esc(t.name)}</text>`;
+    t.cols.forEach((c, i) => {
+      const y = HH + i * RH; if (i) g += `<line class="rl" x1="0" x2="${BW}" y1="${y}" y2="${y}"/>`;
+      const icon = c.pk ? `<path class="pk" transform="translate(9,${y + 6}) scale(.75)" d="M5 7.8a2.7 2.7 0 1 0 .01 0zM7 8.6 13 2.7l1.2 1.2-1.4 1.4 1 1-1.4 1.4-1-1-3 3z"/>` : fk.has(c.n) ? `<path class="fk" transform="translate(10,${y + 7})" d="M5 0l5 5-5 5-5-5z"/>` : `<circle cx="15" cy="${y + RH / 2}" r="2" fill="var(--mute)" opacity=".5"/>`;
+      g += icon + `<text class="tr" x="30" y="${y + 16}">${esc(c.n)}</text><text class="ty" x="${BW - 12}" y="${y + 16}" text-anchor="end">${esc(E.typeStr(c))}</text>`;
+    });
+    boxes += g + '</g>';
+  });
+  svg.setAttribute('width', Math.max(maxX, 520) * zoom); svg.setAttribute('height', Math.max(maxY, 320) * zoom);
+  svg.setAttribute('viewBox', `0 0 ${Math.max(maxX, 520)} ${Math.max(maxY, 320)}`);
+  svg.innerHTML = edges + boxes;
+}
+let drag = null;
+function eerPoint(ev) { const svg = $('#eersvg'); const r = svg.getBoundingClientRect(); const vb = svg.viewBox.baseVal; return { x: (ev.clientX - r.left) * vb.width / r.width, y: (ev.clientY - r.top) * vb.height / r.height }; }
+
+/* ---------- desafios ---------- */
+function rowsKey(r, ordered) {
+  const k = r.rows.map(row => row.map(v => v === null ? 'N' : typeof v === 'number' ? 'n' + v.toFixed(3) : 's' + fold(v).trim()).join('\u0001'));
+  return r.cols.length + '|' + (ordered ? k : k.slice().sort()).join('\u0002');
+}
+function checkChallenge(res) {
+  if (!activeCh || solved.has(activeCh)) return; const c = CH.find(x => x.id === activeCh); if (!c) return;
+  for (const r of res) {
+    if (!r.ok || r.type !== 'rows' || !/^\s*(?:(?:--[^\n]*|#[^\n]*|\/\*[\s\S]*?\*\/)\s*)*select\b/i.test(r.sql)) continue;
+    const a = E.Server.fresh(PRISTINE, 'loja_games').run(r.sql)[0]; const b = E.Server.fresh(PRISTINE, 'loja_games').run(c.sql)[0];
+    if (a && a.ok && b && b.ok && rowsKey(a, c.ordered) === rowsKey(b, c.ordered)) {
+      solved.add(c.id); LS.set('solved', Array.from(solved)); renderChallenges(); renderGoal(); toast(`Desafio ${c.id} resolvido. Muito bem!`); return;
+    }
+  }
+}
+let showHint = {}, showAns = {};
+function renderChallenges() {
+  $('#chal-n').textContent = solved.size + '/' + CH.length; $('#prog').style.width = (solved.size / CH.length * 100) + '%';
+  let h = '', lv = '';
+  CH.forEach(c => {
+    if (c.lv !== lv) { lv = c.lv; h += `<div class="lv">${esc(lv)}</div>`; }
+    const act = activeCh === c.id, done = solved.has(c.id);
+    h += `<div class="cc ${act ? 'act' : ''} ${done ? 'done' : ''}"><button data-c="${c.id}" aria-expanded="${act}"><span class="no">${done ? ico('check') : c.id}</span><span class="tt">${esc(c.title)}</span></button>`;
+    if (act) h += `<div class="cb"><p>${esc(c.ask)}</p><div class="row"><button data-hint="${c.id}">${showHint[c.id] ? 'Esconder dica' : 'Dica'}</button><button data-ans="${c.id}">${showAns[c.id] ? 'Esconder resposta' : 'Ver resposta'}</button></div>${showHint[c.id] ? `<div class="hint">${esc(c.hint)}</div>` : ''}${showAns[c.id] ? `<pre>${esc(c.sql)}</pre>` : ''}<div class="hint">${done ? 'Resolvido. Você pode tentar outro jeito de escrever.' : 'Escreva a consulta no editor e execute. A conferência é automática.'}</div></div>`;
+    h += '</div>';
+  });
+  $('#chlist').innerHTML = h; renderGoal();
+}
+function renderGoal() {
+  const g = $('#goalbar'); const c = CH.find(x => x.id === activeCh);
+  if (!c) { g.className = 'goalbar'; g.innerHTML = ''; return; }
+  const done = solved.has(c.id); g.className = 'goalbar on';
+  g.innerHTML = done ? `${ico('check')}<span><b>Desafio ${c.id} resolvido.</b> ${esc(c.title)}</span><span class="sp"></span><button id="g-next">Próximo desafio</button><button id="g-x" aria-label="Fechar">${ico('x')}</button>` : `<b>Desafio ${c.id}</b><span>${esc(c.ask)}</span><span class="sp"></span><button id="g-x" aria-label="Fechar o desafio">${ico('x')}</button>`;
+}
+function setActiveCh(id) { activeCh = id; LS.set('activeCh', id); renderChallenges(); }
+
+/* ---------- navegação de áreas ---------- */
+function setView(v) {
+  view = v; $('#v-sql').hidden = v !== 'sql'; $('#v-eer').hidden = v !== 'eer';
+  $('#seg-sql').setAttribute('aria-pressed', v === 'sql'); $('#seg-eer').setAttribute('aria-pressed', v === 'eer');
+  if (v === 'eer') drawEER(); else renderEditor();
+}
+function setPane(p) {
+  const real = p === 'eer' ? 'sql' : p; document.body.dataset.pane = real;
+  if (p === 'eer') setView('eer'); else if (p === 'sql') setView('sql');
+  $$('.mtabs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.p === p));
+}
+function toggleChal(on) { const b = $('#body'); const open = on == null ? !b.classList.contains('chal-open') : on; b.classList.toggle('chal-open', open); $('#btn-chal').setAttribute('aria-pressed', open); LS.set('chalOpen', open); }
+
+/* ---------- eventos ---------- */
+ta.addEventListener('input', onInput);
+ta.addEventListener('scroll', () => { syncScroll(); hideAC(); });
+['keyup', 'click', 'focus'].forEach(e => ta.addEventListener(e, ev => { if (ev.type === 'keyup' && ['ArrowDown', 'ArrowUp', 'Enter', 'Tab', 'Escape'].includes(ev.key) && ac.items.length) return; renderEditor(); }));
+ta.addEventListener('blur', () => setTimeout(hideAC, 150));
+ta.addEventListener('keydown', ev => {
+  const mod = ev.ctrlKey || ev.metaKey;
+  if (mod && ev.key === 'Enter') { ev.preventDefault(); ev.shiftKey ? runAll() : runCurrent(); return; }
+  if (mod && ev.key === ' ') { ev.preventDefault(); showAC(true); return; }
+  if (mod && ev.key === '/') {
+    ev.preventDefault(); const v = ta.value; let a = v.lastIndexOf('\n', ta.selectionStart - 1) + 1; let b = v.indexOf('\n', ta.selectionEnd); if (b < 0) b = v.length;
+    const lines = v.slice(a, b).split('\n'); const all = lines.filter(l => l.trim()).every(l => /^\s*--/.test(l));
+    const nl = lines.map(l => all ? l.replace(/^(\s*)-- ?/, '$1') : (l.trim() ? l.replace(/^(\s*)/, '$1-- ') : l)).join('\n');
+    ta.value = v.slice(0, a) + nl + v.slice(b); ta.setSelectionRange(a, a + nl.length); onInput(null); return;
+  }
+  if (ac.items.length && acEl.classList.contains('on')) {
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); ac.sel = (ac.sel + 1) % ac.items.length; renderAC(); return; }
+    if (ev.key === 'ArrowUp') { ev.preventDefault(); ac.sel = (ac.sel - 1 + ac.items.length) % ac.items.length; renderAC(); return; }
+    if (ev.key === 'Enter' || ev.key === 'Tab') { ev.preventDefault(); acceptAC(ac.sel); return; }
+    if (ev.key === 'Escape') { ev.preventDefault(); hideAC(); return; }
+  }
+  if (ev.key === 'Tab' && !ev.shiftKey) { ev.preventDefault(); const p = ta.selectionStart; ta.value = ta.value.slice(0, p) + '  ' + ta.value.slice(ta.selectionEnd); ta.setSelectionRange(p + 2, p + 2); onInput(null); }
+});
+acEl.addEventListener('mousedown', ev => { const d = ev.target.closest('[data-n]'); if (d) { ev.preventDefault(); acceptAC(+d.dataset.n); } });
+gutin.addEventListener('click', ev => { const b = ev.target.closest('.go'); if (!b) return; const st = E.split(ta.value)[+b.dataset.s]; if (st) { ta.focus(); ta.setSelectionRange(st.start, st.start); exec(st.text, st.start); } });
+$('#b-run').onclick = runCurrent; $('#b-all').onclick = runAll; $('#b-fmt').onclick = formatAll;
+$('#b-clr').onclick = () => { ta.value = ''; onInput(null); ta.focus(); };
+$('#safe').onchange = e => { srv.safe = e.target.checked; toast(srv.safe ? 'Modo seguro ligado: UPDATE e DELETE precisam de WHERE com id.' : 'Modo seguro desligado.'); };
+$('#qtabs').addEventListener('click', ev => { const x = ev.target.closest('[data-x]'); if (x) { ev.stopPropagation(); return closeTab(+x.dataset.x); } if (ev.target.closest('#q-add')) return newTab(''); const t = ev.target.closest('.qt'); if (t) switchTab(+t.dataset.i); });
+$('#qtabs').addEventListener('keydown', ev => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.classList.contains('qt')) { ev.preventDefault(); switchTab(+ev.target.dataset.i); } });
+$('#rtabs').addEventListener('click', ev => { const b = ev.target.closest('.rt'); if (!b) return; const rs = tabs[active].rs || (tabs[active].rs = { items: [], sel: 'out' }); rs.sel = b.dataset.i === 'out' ? 'out' : +b.dataset.i; renderResults(); });
+$('#rbody').addEventListener('click', ev => {
+  const re = ev.target.closest('[data-re]'); if (re) { const l = logs[+re.dataset.re]; const v = ta.value.replace(/\s*$/, ''); ta.value = (v ? v + '\n\n' : '') + l.full.trim(); onInput(null); ta.scrollTop = ta.scrollHeight; toast('Instrução colocada no editor.'); return; }
+  const tr = ev.target.closest('table.g tbody tr'); if (tr) { $$('table.g tr.sel').forEach(x => x.classList.remove('sel')); tr.classList.add('sel'); }
+});
+$('#rfoot').addEventListener('click', ev => { if (ev.target.closest('#b-copy')) copyGrid(); });
+/* navegador */
+$('#tree').addEventListener('click', ev => {
+  const run = ev.target.closest('[data-run]'); if (run) { ev.stopPropagation(); selTable = run.dataset.run; return openTableData(run.dataset.run); }
+  const b = ev.target.closest('.tn[data-k]'); const col = ev.target.closest('.tn[data-t]');
+  if (b) { const k = b.dataset.k; if (b.dataset.t) selTable = b.dataset.t; if (expanded.has(k)) expanded.delete(k); else expanded.add(k); if (!b.dataset.t && b.dataset.db && srv.getDb(b.dataset.db) && ev.detail === 2) { srv.cur = srv.getDb(b.dataset.db).name; } refreshAll(); }
+  else if (col) { selTable = col.dataset.t; refreshAll(); }
+});
+$('#tree').addEventListener('dblclick', ev => { const b = ev.target.closest('.tn[data-t]'); if (b && b.dataset.k) openTableData(b.dataset.t); });
+$('#tree').addEventListener('keydown', ev => { const r = ev.target.closest('[data-run]'); if (r && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); openTableData(r.dataset.run); } });
+$('#filter').addEventListener('input', renderTree);
+$('#btn-reset').onclick = () => { const safe = srv.safe; srv = E.Server.fresh(PRISTINE, 'loja_games'); srv.safe = safe; pos = {}; selTable = null; refreshAll(); renderEditor(); toast('Banco restaurado para o estado das 40 etapas.'); };
+/* diagrama */
+const svgEl = $('#eersvg');
+svgEl.addEventListener('pointerdown', ev => { const g = ev.target.closest('g.tbl'); if (!g) return; const p = eerPoint(ev); const t = g.dataset.t; drag = { t, dx: p.x - pos[t].x, dy: p.y - pos[t].y, moved: false }; svgEl.setPointerCapture(ev.pointerId); g.classList.add('drag'); });
+svgEl.addEventListener('pointermove', ev => { if (!drag) return; const p = eerPoint(ev); drag.moved = true; pos[drag.t] = { x: Math.max(8, p.x - drag.dx), y: Math.max(8, p.y - drag.dy) }; drawEER(); const g = svgEl.querySelector(`g.tbl[data-t="${drag.t}"]`); if (g) g.classList.add('drag'); });
+svgEl.addEventListener('pointerup', ev => { if (drag) { const g = svgEl.querySelector(`g.tbl[data-t="${drag.t}"]`); if (g) g.classList.remove('drag'); drag = null; } });
+svgEl.addEventListener('dblclick', ev => { const g = ev.target.closest('g.tbl'); if (g) openTableData(g.dataset.t); });
+$('#z-in').onclick = () => { zoom = Math.min(1.6, zoom + .15); drawEER(); }; $('#z-out').onclick = () => { zoom = Math.max(.55, zoom - .15); drawEER(); };
+$('#z-reset').onclick = () => { pos = {}; zoom = 1; drawEER(); };
+/* desafios */
+$('#chlist').addEventListener('click', ev => {
+  const c = ev.target.closest('[data-c]'); if (c) { const id = +c.dataset.c; setActiveCh(activeCh === id ? null : id); return; }
+  const h = ev.target.closest('[data-hint]'); if (h) { showHint[h.dataset.hint] = !showHint[h.dataset.hint]; renderChallenges(); return; }
+  const a = ev.target.closest('[data-ans]'); if (a) { showAns[a.dataset.ans] = !showAns[a.dataset.ans]; renderChallenges(); }
+});
+$('#goalbar').addEventListener('click', ev => { if (ev.target.closest('#g-x')) setActiveCh(null); else if (ev.target.closest('#g-next')) { const n = CH.find(c => !solved.has(c.id) && c.id > activeCh) || CH.find(c => !solved.has(c.id)); setActiveCh(n ? n.id : null); } });
+$('#btn-chal').onclick = () => toggleChal(); $('#chal-close').onclick = () => toggleChal(false);
+/* barra */
+$('#seg-sql').onclick = () => setView('sql'); $('#seg-eer').onclick = () => setView('eer');
+$$('.mtabs button').forEach(b => b.onclick = () => setPane(b.dataset.p));
+$('#btn-help').onclick = () => $('#ov-help').classList.add('on'); $('#h-ok').onclick = () => $('#ov-help').classList.remove('on');
+$('#ov-help').addEventListener('click', ev => { if (ev.target.id === 'ov-help') ev.target.classList.remove('on'); });
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') $('#ov-help').classList.remove('on'); });
+$('#btn-theme').onclick = () => { const root = document.documentElement; const cur = root.dataset.theme || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light'); const nx = cur === 'dark' ? 'light' : 'dark'; root.dataset.theme = nx; LS.set('theme', nx); };
+/* divisor */
+(function () {
+  const sp = $('#split'), ew = $('#edwrap'); let st = null;
+  const clamp = h => Math.max(90, Math.min(h, $('.card').clientHeight - 260));
+  sp.addEventListener('pointerdown', ev => { st = { y: ev.clientY, h: ew.offsetHeight }; sp.setPointerCapture(ev.pointerId); });
+  sp.addEventListener('pointermove', ev => { if (st) ew.style.height = clamp(st.h + ev.clientY - st.y) + 'px'; });
+  sp.addEventListener('pointerup', () => { st = null; });
+  sp.tabIndex = 0; sp.addEventListener('keydown', ev => { if (ev.key === 'ArrowUp' || ev.key === 'ArrowDown') { ev.preventDefault(); ew.style.height = clamp(ew.offsetHeight + (ev.key === 'ArrowDown' ? 24 : -24)) + 'px'; } });
+})();
+
+/* ---------- início ---------- */
+const th = LS.get('theme', null); if (th === 'dark' || th === 'light') document.documentElement.dataset.theme = th;
+document.body.dataset.pane = 'sql';
+const wide = innerWidth >= 1320; toggleChal(LS.get('chalOpen', wide) && innerWidth >= 1180 ? true : false);
+refreshNames(); renderTabs(); ta.value = tabs[active].text; renderChallenges(); refreshAll(); renderEditor(); renderResults();
+if (ta.value === DEFAULT_TEXT) { ta.setSelectionRange(ta.value.length, ta.value.length); exec(ta.value, 0); }
+window.__lab = { srv: () => srv, exec, E };
+})();
+
+</script>
+
+</body>
+</html>
