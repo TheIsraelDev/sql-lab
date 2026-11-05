@@ -59,6 +59,8 @@ SELECT * FROM livros;
 Os dados existem só enquanto a página está aberta. Ao recarregar, volta o banco original.
 O botão **Restaurar** também devolve o `loja_games` ao estado inicial.
 
+Cada aluno tem o próprio banco no navegador: o que você altera não aparece para os colegas.
+
 ---
 
 ## O que o simulador entende
@@ -78,46 +80,7 @@ aprendizado, não um servidor de banco de dados.
 
 ---
 
-## Para o professor: publicar no GitHub Pages
-
-Faça uma vez. Depois disso, o link funciona para qualquer aluno.
-
-1. No GitHub, acesse https://github.com/new
-2. Em **Repository name**, escreva `sql-lab`. Marque **Public** e clique em **Create repository**.
-3. Na página do repositório, clique em **uploading an existing file**.
-4. Arraste para a página os arquivos `index.html` e `README.md` desta pasta.
-   O arquivo principal **precisa se chamar `index.html`**, em minúsculas.
-5. Clique em **Commit changes**.
-6. Abra **Settings → Pages**.
-7. Em **Build and deployment → Source**, escolha **Deploy from a branch**.
-   Em **Branch**, escolha **main** e a pasta **/ (root)**. Clique em **Save**.
-8. Aguarde de 1 a 2 minutos e atualize a página de configurações.
-   Aparece a mensagem **Your site is live at ...** com o endereço final.
-
-O endereço será:
-
-```
-https://theisraeldev.github.io/sql-lab/
-```
-
-Se aparecer erro 404, confira: repositório **Public**, arquivo chamado `index.html`,
-Pages ativado na branch **main** e o endereço escrito exatamente como o do passo 8.
-
-### Como atualizar depois
-
-1. Abra o repositório e clique em `index.html`.
-2. Clique no lápis (**Edit**) ou, na página principal, em **Add file → Upload files**
-   e envie o novo arquivo com o mesmo nome.
-3. Clique em **Commit changes**. Em poucos minutos o link já mostra a versão nova.
-
-### Dica para a sala
-
-Coloque o link ou um QR code no slide da aula. Cada aluno tem o próprio banco no
-navegador, então o que um altera não aparece para os outros.
-
----
-
-## Estrutura do projeto
+## Sobre o projeto
 
 ```
 sql-lab/
@@ -125,5 +88,5 @@ sql-lab/
 └── README.md    este guia
 ```
 
-Não há dependências para instalar. A única coisa carregada da internet é a fonte do
-texto; sem ela, o navegador usa uma fonte padrão.
+Não há nada para instalar. A página roda inteira no navegador e funciona em computador,
+tablet e celular.
