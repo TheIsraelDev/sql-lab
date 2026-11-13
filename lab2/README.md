@@ -2,7 +2,7 @@
 
 Continuação do SQL Lab. Aqui você **monta bancos de dados inteiros, do zero**, seguindo uma trilha de
 44 missões em 7 fases, no tema de uma loja de mangás, HQs e webtoons. Enquanto você cria as tabelas,
-o **diagrama (DER e MER) se desenha sozinho** ao lado do editor. Tudo roda no navegador, sem instalar nada.
+o **diagrama (DER e MER) se desenha sozinho** na aba **Diagrama**, ao lado de Consulta. Tudo roda no navegador, sem instalar nada.
 
 **Acesse:** https://theisraeldev.github.io/sql-lab/lab2/
 
@@ -16,7 +16,7 @@ o **diagrama (DER e MER) se desenha sozinho** ao lado do editor. Tudo roda no na
 2. Leia a **missão 1** no painel da direita (e na faixa acima do editor).
 3. Escreva o comando no editor e aperte **Ctrl + Enter** para executar a instrução onde o cursor está.
    **Ctrl + Shift + Enter** executa tudo o que está escrito.
-4. Veja o resultado na grade e o desenho nascer ao lado. Quando a missão estiver certa, ela ganha um ✓ verde.
+4. Veja o resultado na grade e, quando quiser, abra a aba **Diagrama** para ver o desenho nascer. Quando a missão estiver certa, ela ganha um ✓ verde.
 5. Siga para a missão seguinte. As 44 missões vão do `CREATE DATABASE` até um projeto seu.
 
 Use a **apostila em PDF** ("Apostila SQL Lab 2 - MangaVerso.pdf", nesta pasta) como guia: ela tem um passo para cada
@@ -46,13 +46,13 @@ Cada missão tem quatro botões:
 No topo do painel, **Montar o banco até aqui** apaga o que você tem e refaz o banco com as respostas das missões
 anteriores à atual. Serve para quem pulou uma etapa e quer continuar sem travar.
 
-## O diagrama ao lado do editor
+## A aba Diagrama
 
 - **DER**: as tabelas como ficam no banco, com colunas, tipos, chaves primárias (bolinha dourada) e estrangeiras (losango rosa).
 - **MER**: o desenho conceitual, com entidades, relacionamentos (1 para N) e a ligação N para N como losango.
 - O botão de download salva o diagrama como imagem **SVG**.
-- A aba **Diagrama** (barra de cima) abre uma versão grande, em que você pode arrastar as tabelas.
-- Em telas estreitas o painel lateral fica oculto; use a aba **Diagrama**.
+- A aba **Diagrama** fica no topo, ao lado de **Consulta**: troque de tela quando quiser, assim o editor continua com todo o espaço.
+- Ela se atualiza sozinha a cada tabela criada e funciona também no celular.
 
 ## Seu banco e seu progresso
 

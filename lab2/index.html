@@ -258,11 +258,7 @@ table.out button:hover{border-color:var(--accent)}
 /* ---- Lab 2: diagrama ao lado, trilha de missões ---- */
 #center{container-type:inline-size}
 .edcol{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
-#v-sql{flex-direction:row}
-#v-sql .card{margin-right:10px}
-#side{display:none;flex:none;width:clamp(320px,34cqw,500px);margin:34px 10px 0 0;border:1px solid var(--line);border-radius:10px;background:var(--panel);box-shadow:var(--shadow);flex-direction:column;min-height:0;overflow:hidden}
-@container (min-width:880px){#side{display:flex}.tool .btn kbd{display:none}.tool .btn .lbl{display:none}.tool .btn{padding:6px 10px}}
-@container (max-width:879px){#v-sql .card{margin-right:10px}}
+#side{display:flex;flex:1;min-width:0;margin:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);box-shadow:var(--shadow);flex-direction:column;min-height:0;overflow:hidden}
 .sidehead{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line);font-size:13px}
 .sidehead #side-db{color:var(--mute);font:500 12px var(--mono)}
 .sidehead .sp{flex:1}
@@ -275,7 +271,8 @@ table.out button:hover{border-color:var(--accent)}
 .ib2{border:1px solid var(--line);background:none;border-radius:7px;width:28px;height:26px;display:grid;place-items:center;cursor:pointer;color:var(--mute)}
 .ib2:hover{color:var(--accent);border-color:var(--accent)}
 .sidebox{flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:6px;background:var(--panel2)}
-#sidesvg{width:100%;height:auto;display:block}
+#sidesvg{width:100%;height:auto;display:block;margin:0 auto}
+#v-eer{flex-direction:column}
 #sidenote{margin:0;padding:8px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--mute)}
 #sidenote b{color:var(--ink)}
 .k-pk,.k-fk{display:inline-block;width:9px;height:9px;vertical-align:-1px}
@@ -372,17 +369,17 @@ table.out button:hover{border-color:var(--accent)}
             <div class="rfoot" id="rfoot"></div>
           </div>
         </div></div>
+      </section>
+
+      <section class="view" id="v-eer" hidden>
         <aside id="side" aria-label="Diagrama do banco, atualizado ao vivo">
-          <div class="sidehead"><b>Diagrama</b><span id="side-db"></span><span class="sp"></span>
+          <div class="sidehead"><b>Diagrama do banco</b><span id="side-db"></span><span class="sp"></span>
             <div class="seg2" id="side-mode" role="group" aria-label="Tipo de diagrama"><button data-m="der" aria-pressed="true" title="Diagrama de tabelas, com colunas e tipos">DER</button><button data-m="mer" aria-pressed="false" title="Modelo conceitual: entidades e relacionamentos">MER</button></div>
             <button class="ib2" id="side-dl" aria-label="Baixar o diagrama como imagem SVG" title="Baixar como imagem (SVG)"><svg class="i"><use href="#i-down"/></svg></button></div>
           <div class="sidebox"><svg id="sidesvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Diagrama do banco de dados"></svg></div>
           <p id="sidenote"></p>
         </aside>
-      </section>
-
-      <section class="view" id="v-eer" hidden>
-        <div class="eer">
+        <div class="eer" hidden style="display:none">
           <div class="eerbar">
             <h3>Diagrama das tabelas <span id="eer-db" style="color:var(--mute);font-weight:400"></span></h3>
             <div class="leg"><span><svg class="i" style="color:var(--amber);fill:var(--amber);stroke:none;width:13px"><use href="#i-key"/></svg>chave primária</span><span><svg class="i" style="color:var(--accent);fill:var(--accent);stroke:none;width:13px"><use href="#i-fk"/></svg>chave estrangeira</span><span>1 ━━ ⋔ um para muitos</span></div>
@@ -413,7 +410,7 @@ table.out button:hover{border-color:var(--accent)}
 
 <div class="ov" id="ov-help"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="h-t">
   <h2 id="h-t">Como usar o SQL Lab 2</h2>
-  <p>Você vai montar, do zero, o banco da <b>MangáVerso</b>, uma loja de mangás e HQs. A trilha de <b>missões</b> fica no painel da direita e o <b>diagrama</b> (DER ou MER) ao lado do editor, que se desenha sozinho a cada tabela que você cria.</p>
+  <p>Você vai montar, do zero, o banco da <b>MangáVerso</b>, uma loja de mangás e HQs. A trilha de <b>missões</b> fica no painel da direita e, na aba <b>Diagrama</b>, o <b>DER</b> e o <b>MER</b> do seu banco, que se desenham sozinhos a cada tabela que você cria.</p>
   <h3>Como funciona</h3>
   <table><tr><td>1. Leia a missão</td><td>Ela aparece no painel e numa faixa acima do editor</td></tr>
   <tr><td>2. Escreva o SQL</td><td>No editor, usando a apostila como guia</td></tr>
@@ -427,7 +424,7 @@ table.out button:hover{border-color:var(--accent)}
   <table><tr><td>DER</td><td>As tabelas como ficam no banco: colunas, tipos, chaves primárias e estrangeiras</td></tr>
   <tr><td>MER</td><td>O desenho conceitual: entidades, relacionamentos e atributos</td></tr>
   <tr><td>Botão de baixar</td><td>Salva o diagrama como imagem (SVG)</td></tr>
-  <tr><td>Aba Diagrama</td><td>Versão grande, em que você arrasta as tabelas</td></tr></table>
+  <tr><td>Aba Diagrama</td><td>Fica ao lado de Consulta, no topo: troque entre as duas telas quando quiser</td></tr></table>
   <h3>Boas práticas</h3>
   <p>Termine cada comando com <b>;</b> e escreva textos entre aspas simples. Se aparecer um erro vermelho, leia a mensagem: ela diz o que o banco não entendeu. O seu progresso fica guardado neste navegador. Para levar o banco para outro lugar, use <b>Salvar .sql</b> e, depois, <b>Abrir .sql</b>.</p>
   <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn pri" id="h-ok">Entendi</button></div>
@@ -2432,7 +2429,7 @@ function buildUntil(id) {
 function setView(v) {
   view = v; $('#v-sql').hidden = v !== 'sql'; $('#v-eer').hidden = v !== 'eer';
   $('#seg-sql').setAttribute('aria-pressed', v === 'sql'); $('#seg-eer').setAttribute('aria-pressed', v === 'eer');
-  if (v === 'eer') drawEER(); else renderEditor();
+  if (v === 'eer') { renderSide(); } else renderEditor();
 }
 function setPane(p) {
   const real = p === 'eer' ? 'sql' : p; document.body.dataset.pane = real;
@@ -2528,7 +2525,7 @@ function renderSide() {
     box.innerHTML = `<text x="18" y="52" font-family="${SIDE_UI}" font-size="14" fill="${cssv('--ink', '#12262f')}">O diagrama aparece aqui.</text><text x="18" y="78" font-family="${SIDE_UI}" font-size="12.5" fill="${cssv('--mute', '#5a7280')}">Crie um banco e uma tabela (CREATE TABLE)</text><text x="18" y="98" font-family="${SIDE_UI}" font-size="12.5" fill="${cssv('--mute', '#5a7280')}">e veja o desenho nascer sozinho.</text>`; return;
   }
   const g = buildDiagram(d, sideMode); const pad = 28; const vw = g.w + pad * 2, vh = g.h + pad * 2 + 4;
-  box.setAttribute('viewBox', `${-pad} ${-pad} ${vw} ${vh}`); box.style.maxWidth = Math.round(vw * 1.25) + 'px'; box.style.minWidth = Math.min(vw, 300) + 'px';
+  box.setAttribute('viewBox', `${-pad} ${-pad} ${vw} ${vh}`); box.style.maxWidth = Math.round(vw) + 'px';
   box.innerHTML = g.svg; box.dataset.w = vw; box.dataset.h = vh;
 }
 function downloadSide() {
