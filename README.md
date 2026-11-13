@@ -94,7 +94,7 @@ tablet e celular.
 
 =====================================================================================================================================
 
-# SQL Lab 2 · MangáVerso
+# SQL Lab 2 · 
 
 Continuação do SQL Lab. Aqui você **monta bancos de dados inteiros, do zero**, seguindo uma trilha de
 44 missões em 7 fases, no tema de uma loja de mangás, HQs e webtoons. Enquanto você cria as tabelas,
