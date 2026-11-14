@@ -279,6 +279,8 @@ table.out button:hover{border-color:var(--accent)}
 <symbol id="i-code" viewBox="0 0 16 16"><path d="M5.5 4 2 8l3.5 4M10.5 4 14 8l-3.5 4"/></symbol>
 <symbol id="i-eer" viewBox="0 0 16 16"><rect x="1.8" y="2.5" width="5" height="4.5" rx="1"/><rect x="9.2" y="9" width="5" height="4.5" rx="1"/><path d="M6.8 4.7h3.4v4.3"/></symbol>
 <symbol id="i-flag" viewBox="0 0 16 16"><path d="M3.5 14V2.5M3.5 3h8l-1.8 2.8L11.5 8.5h-8"/></symbol>
+<symbol id="i-down" viewBox="0 0 16 16"><path d="M8 2.5v8M4.5 7.5 8 11l3.5-3.5M3 13.5h10"/></symbol>
+<symbol id="i-up" viewBox="0 0 16 16"><path d="M8 11V3M4.5 6 8 2.5 11.5 6M3 13.5h10"/></symbol>
 <symbol id="i-reset" viewBox="0 0 16 16"><path d="M3 8a5 5 0 1 0 1.6-3.7M3 2.5v3h3"/></symbol>
 <symbol id="i-play" viewBox="0 0 16 16"><path d="M4.5 2.5v11l9-5.5z"/></symbol>
 </defs></svg>
@@ -299,7 +301,8 @@ table.out button:hover{border-color:var(--accent)}
 
   <div class="body" id="body">
     <aside class="pane" id="nav" aria-label="Navegador de tabelas">
-      <div class="ph">Navegador <span class="sp"></span><button id="btn-reset" title="Volta o banco ao estado das 40 etapas"><svg class="i"><use href="#i-reset"/></svg>Restaurar</button></div>
+      <div class="ph">Navegador <span class="sp"></span><button id="btn-reset" title="Volta o loja_games ao original e remove os bancos que você criou"><svg class="i"><use href="#i-reset"/></svg>Restaurar</button></div>
+      <div class="ph" style="padding-top:0;padding-bottom:6px;gap:6px"><button id="btn-export" title="Baixa o banco atual como um arquivo .sql"><svg class="i"><use href="#i-down"/></svg>Salvar .sql</button><button id="btn-import" title="Abre um arquivo .sql em uma nova aba"><svg class="i"><use href="#i-up"/></svg>Abrir .sql</button><input type="file" id="file-sql" accept=".sql,.txt,text/plain" hidden></div>
       <input id="filter" type="search" placeholder="Filtrar tabelas e colunas" aria-label="Filtrar objetos">
       <div class="ph" style="padding-top:4px">Schemas</div>
       <div id="tree" role="tree"></div>
@@ -369,7 +372,7 @@ table.out button:hover{border-color:var(--accent)}
 
 <div class="ov" id="ov-help"><div class="dlg" role="dialog" aria-modal="true" aria-labelledby="h-t">
   <h2 id="h-t">Como usar o SQL Lab Workbench</h2>
-  <p>Um simulador do MySQL Workbench, rodando só no seu navegador. O banco <b>loja_games</b> já vem pronto, com o resultado das 40 etapas.</p>
+  <p>Um simulador do MySQL Workbench, rodando só no seu navegador. O banco <b>loja_games</b> já vem pronto, com o resultado das 40 etapas. Você também pode <b>criar o seu próprio banco</b> com <code>CREATE DATABASE</code> e <code>CREATE TABLE</code>, do jeito que quiser.</p>
   <h3>Atalhos</h3>
   <table><tr><td>Ctrl + Enter</td><td>Executa a instrução onde o cursor está (ou o trecho selecionado)</td></tr>
   <tr><td>Ctrl + Shift + Enter</td><td>Executa todas as instruções da aba</td></tr>
@@ -381,8 +384,16 @@ table.out button:hover{border-color:var(--accent)}
   <tr><td>DESCRIBE jogos;</td><td>mostra as colunas de uma tabela</td></tr>
   <tr><td>SELECT * FROM jogos;</td><td>mostra todas as linhas</td></tr>
   <tr><td>USE loja_games;</td><td>escolhe o banco de trabalho</td></tr></table>
+  <h3>Crie o seu banco</h3>
+  <table><tr><td>CREATE DATABASE escola;</td><td>cria o banco; depois use <code>USE escola;</code></td></tr>
+  <tr><td>CREATE TABLE ...</td><td>aceita chave primária e estrangeira (com ON DELETE CASCADE), ENUM, CHECK, DEFAULT e UNIQUE</td></tr>
+  <tr><td>CREATE VIEW v AS SELECT ...</td><td>guarda uma consulta com nome; <code>DROP VIEW v;</code> apaga</td></tr>
+  <tr><td>SELECT ... UNION SELECT ...</td><td>junta o resultado de duas consultas</td></tr>
+  <tr><td>START TRANSACTION; ... ROLLBACK;</td><td>faz alterações de teste e depois desfaz tudo</td></tr>
+  <tr><td>Modo seguro (barra de cima)</td><td>barra UPDATE e DELETE sem WHERE em coluna-chave (erro 1175)</td></tr>
+  <tr><td>Salvar .sql / Abrir .sql</td><td>guarda o seu banco em um arquivo e abre de novo depois</td></tr></table>
   <h3>Boas práticas</h3>
-  <p>Termine cada comando com <b>;</b> e escreva textos entre aspas simples. Se aparecer um erro vermelho, leia a mensagem: ela diz o que o banco não entendeu. O botão <b>Restaurar</b> devolve o banco ao estado original.</p>
+  <p>Termine cada comando com <b>;</b> e escreva textos entre aspas simples. Se aparecer um erro vermelho, leia a mensagem: ela diz o que o banco não entendeu. Os dados existem só enquanto a página está aberta: use <b>Salvar .sql</b> para guardar o seu banco. O botão <b>Restaurar</b> devolve o loja_games ao original e remove os bancos criados por você.</p>
   <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn pri" id="h-ok">Entendi</button></div>
 </div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -431,6 +442,7 @@ function tokenize(src) {
       const dot = raw.indexOf('.'); const sc = (dot >= 0 && !/[eE]/.test(raw)) ? raw.length - dot - 1 : null;
       T.push({ t: 'num', v: parseFloat(raw), scale: sc, pos: st, end: i + raw.length }); i += raw.length; continue;
     }
+    if (c === '@' && /[A-Za-z_]/.test(src[i + 1] || '')) { let j = i + 1; while (j < n && /[A-Za-z0-9_]/.test(src[j])) j++; T.push({ t: 'id', v: src.slice(i, j), pos: st, end: j }); i = j; continue; }
     if (/[A-Za-z_À-￿]/.test(c)) {
       let j = i + 1; while (j < n && /[A-Za-z0-9_$À-￿]/.test(src[j])) j++;
       T.push({ t: 'id', v: src.slice(i, j), pos: st, end: j }); i = j; continue;
@@ -491,8 +503,14 @@ class Parser {
     const k = this.cur; if (k.t !== 'id') this.fail();
     const w = k.v.toUpperCase(); let s;
     switch (w) {
-      case 'SELECT': s = this.select(); break;
+      case 'SELECT': s = this.selectUnion(); break;
       case 'INSERT': s = this.insert(); break;
+      case 'REPLACE': s = this.insert(); break;
+      case 'RENAME': s = this.renameStmt(); break;
+      case 'START': case 'BEGIN': this.i++; this.eatKw('TRANSACTION'); s = { k: 'txn', op: 'begin' }; break;
+      case 'COMMIT': this.i++; s = { k: 'txn', op: 'commit' }; break;
+      case 'ROLLBACK': this.i++; s = { k: 'txn', op: 'rollback' }; break;
+      case 'SET': s = this.setStmt(); break;
       case 'UPDATE': s = this.update(); break;
       case 'DELETE': s = this.del(); break;
       case 'CREATE': s = this.create(); break;
@@ -502,11 +520,25 @@ class Parser {
       case 'DESCRIBE': case 'DESC': case 'EXPLAIN': this.i++; s = { k: 'describe', tbl: this.tref().name, db: this.lastDb }; break;
       case 'USE': this.i++; s = { k: 'use', db: this.ident() }; break;
       case 'TRUNCATE': this.i++; this.eatKw('TABLE'); { const t = this.tref(); s = { k: 'truncate', tbl: t.name, db: t.db }; } break;
-      default: throw err(1064, '42000', `Comando '${k.v}' não existe ou ainda não é suportado neste simulador. Tente SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, SHOW, DESCRIBE ou USE.`);
+      default: throw err(1064, '42000', `Comando '${k.v}' não existe ou ainda não é suportado neste simulador. Tente SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, DROP, SHOW, DESCRIBE, USE, START TRANSACTION, COMMIT ou ROLLBACK.`);
     }
     this.eatOp(';');
     if (this.cur.t !== 'eof') this.fail();
     return s;
+  }
+  setStmt() {
+    this.needKw('SET'); const items = [];
+    do {
+      this.eatKw('SESSION') || this.eatKw('GLOBAL');
+      const k = this.cur; if (k.t !== 'id') this.fail(); this.i++; this.needOp('=');
+      items.push({ n: k.v, e: this.expr() });
+    } while (this.eatOp(','));
+    return { k: 'set', items };
+  }
+  renameStmt() {
+    this.needKw('RENAME'); this.needKw('TABLE'); const pairs = [];
+    do { const a = this.tref(); this.needKw('TO'); const b = this.ident(); pairs.push({ db: a.db, from: a.name, to: b }); } while (this.eatOp(','));
+    return { k: 'rename', pairs };
   }
   tref() { let a = this.ident(); this.lastDb = null; if (this.eatOp('.')) { this.lastDb = a; a = this.ident(); } return { db: this.lastDb, name: a }; }
   /* ----- expressões ----- */
@@ -525,15 +557,16 @@ class Parser {
       this.fail();
     }
     let neg = false;
-    if (this.kw('NOT') && (this.kw('IN', 1) || this.kw('BETWEEN', 1) || this.kw('LIKE', 1))) { this.i++; neg = true; }
+    if (this.kw('NOT') && (this.kw('IN', 1) || this.kw('BETWEEN', 1) || this.kw('LIKE', 1) || this.kw('REGEXP', 1) || this.kw('RLIKE', 1))) { this.i++; neg = true; }
     if (this.eatKw('IN')) {
       this.needOp('(');
-      if (this.kw('SELECT')) { const sel = this.select(); this.needOp(')'); return { k: 'in', e: l, sub: sel, neg }; }
+      if (this.kw('SELECT')) { const sel = this.selectUnion(); this.needOp(')'); return { k: 'in', e: l, sub: sel, neg }; }
       const list = [this.expr()]; while (this.eatOp(',')) list.push(this.expr()); this.needOp(')');
       return { k: 'in', e: l, list, neg };
     }
     if (this.eatKw('BETWEEN')) { const a = this.add(); this.needKw('AND'); const b = this.add(); return { k: 'between', e: l, a, b, neg }; }
     if (this.eatKw('LIKE')) return { k: 'like', e: l, p: this.add(), neg };
+    if (this.eatKw('REGEXP') || this.eatKw('RLIKE')) return { k: 'like', re: true, e: l, p: this.add(), neg };
     return l;
   }
   add() { let l = this.mul(); for (;;) { const k = this.cur; if (k.t === 'op' && (k.v === '+' || k.v === '-')) { this.i++; l = { k: 'bin', op: k.v, l, r: this.mul() }; } else return l; } }
@@ -553,7 +586,7 @@ class Parser {
     if (k.t === 'str') { this.i++; return { k: 'str', v: k.v }; }
     if (k.t === 'op' && k.v === '(') {
       this.i++;
-      if (this.kw('SELECT')) { const sel = this.select(); this.needOp(')'); return { k: 'sub', sel }; }
+      if (this.kw('SELECT')) { const sel = this.selectUnion(); this.needOp(')'); return { k: 'sub', sel }; }
       const e = this.expr(); this.needOp(')'); return e;
     }
     if (k.t === 'qid') { this.i++; return this.colRest(k.v); }
@@ -564,6 +597,9 @@ class Parser {
       if (w === 'FALSE') { this.i++; return { k: 'num', v: 0, scale: null }; }
       if (w === 'DEFAULT' && !this.op('(', 1)) { this.i++; return { k: 'default' }; }
       if (w === 'CASE') return this.caseExpr();
+      if (k.v[0] === '@') { this.i++; return { k: 'var', n: k.v.slice(1).toLowerCase() }; }
+      if (w === 'EXISTS' && this.op('(', 1) && this.kw('SELECT', 2)) { this.i += 2; const sel = this.selectUnion(); this.needOp(')'); return { k: 'exists', sel }; }
+      if (['CURRENT_TIMESTAMP', 'CURRENT_DATE', 'CURRENT_TIME', 'LOCALTIME', 'LOCALTIMESTAMP'].includes(w) && !this.op('(', 1)) { this.i++; return { k: 'fn', name: w === 'LOCALTIME' || w === 'LOCALTIMESTAMP' ? 'NOW' : w, args: [], star: false, distinct: false }; }
       if (this.op('(', 1)) return this.func();
       if (RESERVED.has(w)) this.fail();
       this.i++; return this.colRest(k.v);
@@ -592,6 +628,7 @@ class Parser {
     if (this.op('*') && name === 'COUNT') { this.i++; f.star = true; this.needOp(')'); return f; }
     if (this.eatKw('DISTINCT')) f.distinct = true;
     f.args.push(this.expr()); while (this.eatOp(',')) f.args.push(this.expr());
+    if (name === 'GROUP_CONCAT' && this.eatKw('SEPARATOR')) { const s = this.cur; if (s.t !== 'str') this.fail(); this.i++; f.sep = s.v; }
     this.needOp(')'); return f;
   }
   /* ----- SELECT ----- */
@@ -634,12 +671,20 @@ class Parser {
       if (this.eatOp(',')) { const b = this.cur; if (b.t !== 'num') this.fail(); this.i++; s.offset = a.v; s.limit = b.v; }
       else { s.limit = a.v; if (this.eatKw('OFFSET')) { const b = this.cur; if (b.t !== 'num') this.fail(); this.i++; s.offset = b.v; } }
     }
-    if (this.kw('UNION')) throw err(1064, '42000', 'UNION ainda não é suportado neste simulador.');
     return s;
+  }
+  selectUnion() {
+    const member = () => { if (this.op('(') && this.kw('SELECT', 1)) { this.i++; const s = this.select(); this.needOp(')'); s.paren = true; return s; } return this.select(); };
+    const first = member(); if (!this.kw('UNION')) return first;
+    const parts = [first], alls = [];
+    while (this.eatKw('UNION')) { let all = false; if (this.eatKw('ALL')) all = true; else this.eatKw('DISTINCT'); alls.push(all); parts.push(member()); }
+    const last = parts[parts.length - 1]; let order = [], limit = null, offset = 0;
+    if (!last.paren) { order = last.order; limit = last.limit; offset = last.offset; last.order = []; last.limit = null; last.offset = 0; }
+    return { k: 'union', parts, alls, order, limit, offset };
   }
   source() {
     if (this.op('(')) {
-      this.i++; const sel = this.select(); this.needOp(')'); this.eatKw('AS');
+      this.i++; const sel = this.selectUnion(); this.needOp(')'); this.eatKw('AS');
       const alias = this.ident(); return { sub: sel, alias };
     }
     const r = this.tref(); let alias = null;
@@ -648,39 +693,72 @@ class Parser {
   }
   /* ----- DML ----- */
   insert() {
-    this.needKw('INSERT'); this.eatKw('INTO'); const r = this.tref(); let cols = null;
-    if (this.op('(') && !this.kw('SELECT', 1)) { this.i++; cols = [this.ident()]; while (this.eatOp(',')) cols.push(this.ident()); this.needOp(')'); }
-    if (this.kw('SELECT')) return { k: 'insert', db: r.db, tbl: r.name, cols, sel: this.select() };
-    if (!this.eatKw('VALUES') && !this.eatKw('VALUE')) this.fail();
-    const rows = [];
-    do { this.needOp('('); const row = []; if (!this.op(')')) { row.push(this.expr()); while (this.eatOp(',')) row.push(this.expr()); } this.needOp(')'); rows.push(row); } while (this.eatOp(','));
-    return { k: 'insert', db: r.db, tbl: r.name, cols, rows };
+    const isRep = this.kw('REPLACE'); this.i++; let mode = isRep ? 'replace' : 'plain';
+    if (!isRep && this.eatKw('IGNORE')) mode = 'ignore';
+    this.eatKw('INTO'); const r = this.tref(); let cols = null;
+    if (this.op('(') && this.op(')', 1)) { this.i += 2; cols = []; }
+    else if (this.op('(') && !this.kw('SELECT', 1)) { this.i++; cols = [this.ident()]; while (this.eatOp(',')) cols.push(this.ident()); this.needOp(')'); }
+    let st;
+    if (this.kw('SELECT') || (this.op('(') && this.kw('SELECT', 1))) st = { k: 'insert', db: r.db, tbl: r.name, cols, sel: this.selectUnion() };
+    else {
+      if (!this.eatKw('VALUES') && !this.eatKw('VALUE')) this.fail();
+      const rows = [];
+      do { this.needOp('('); const row = []; if (!this.op(')')) { row.push(this.expr()); while (this.eatOp(',')) row.push(this.expr()); } this.needOp(')'); rows.push(row); } while (this.eatOp(','));
+      st = { k: 'insert', db: r.db, tbl: r.name, cols, rows };
+    }
+    st.mode = mode; st.dup = null;
+    if (this.kw('ON') && this.kw('DUPLICATE', 1)) {
+      this.i += 2; this.needKw('KEY'); this.needKw('UPDATE'); st.dup = [];
+      do { const c = this.ident(); this.needOp('='); st.dup.push({ c, e: this.expr() }); } while (this.eatOp(','));
+      st.mode = 'dup';
+    }
+    return st;
+  }
+  orderLimit(o) {
+    if (this.eatKw('ORDER')) { this.needKw('BY'); o.order = []; do { const e = this.expr(); let dir = 1; if (this.eatKw('DESC')) dir = -1; else this.eatKw('ASC'); o.order.push({ e, dir }); } while (this.eatOp(',')); }
+    if (this.eatKw('LIMIT')) { const a = this.cur; if (a.t !== 'num') this.fail(); this.i++; o.limit = a.v; }
+    return o;
   }
   update() {
     this.needKw('UPDATE'); const r = this.tref(); this.needKw('SET'); const sets = [];
     do { const c = this.ident(); this.needOp('='); sets.push({ c, e: this.expr() }); } while (this.eatOp(','));
     let where = null; if (this.eatKw('WHERE')) where = this.expr();
-    return { k: 'update', db: r.db, tbl: r.name, sets, where };
+    return this.orderLimit({ k: 'update', db: r.db, tbl: r.name, sets, where, order: null, limit: null });
   }
   del() {
     this.needKw('DELETE'); this.needKw('FROM'); const r = this.tref(); let where = null; if (this.eatKw('WHERE')) where = this.expr();
-    return { k: 'delete', db: r.db, tbl: r.name, where };
+    return this.orderLimit({ k: 'delete', db: r.db, tbl: r.name, where, order: null, limit: null });
   }
   /* ----- DDL ----- */
   colType() {
-    const k = this.cur; if (k.t !== 'id') this.fail(); const w = k.v.toUpperCase(); this.i++;
-    const map = { INT: 'int', INTEGER: 'int', BIGINT: 'int', SMALLINT: 'int', TINYINT: 'int', MEDIUMINT: 'int', DECIMAL: 'decimal', NUMERIC: 'decimal', DEC: 'decimal', FLOAT: 'float', DOUBLE: 'float', REAL: 'float', VARCHAR: 'varchar', CHAR: 'char', TEXT: 'text', DATE: 'date', DATETIME: 'datetime', TIMESTAMP: 'datetime', BOOLEAN: 'bool', BOOL: 'bool' };
-    if (!map[w]) throw err(1064, '42000', `Tipo de coluna '${k.v}' desconhecido. Exemplos: INT, VARCHAR(40), DECIMAL(6,2), DATE, TEXT.`);
+    const k = this.cur; if (k.t !== 'id') this.fail(); let w = k.v.toUpperCase(); this.i++;
+    if (w === 'DOUBLE' && this.eatKw('PRECISION')) w = 'DOUBLE';
+    const map = { INT: 'int', INTEGER: 'int', BIGINT: 'int', SMALLINT: 'int', TINYINT: 'int', MEDIUMINT: 'int', DECIMAL: 'decimal', NUMERIC: 'decimal', DEC: 'decimal', FIXED: 'decimal', FLOAT: 'float', DOUBLE: 'float', REAL: 'float', VARCHAR: 'varchar', CHAR: 'char', TEXT: 'text', TINYTEXT: 'text', MEDIUMTEXT: 'text', LONGTEXT: 'text', JSON: 'text', BLOB: 'text', DATE: 'date', DATETIME: 'datetime', TIMESTAMP: 'datetime', TIME: 'time', YEAR: 'year', BOOLEAN: 'bool', BOOL: 'bool', ENUM: 'enum' };
+    if (!map[w]) throw err(1064, '42000', `Tipo de coluna '${k.v}' desconhecido. Exemplos: INT, VARCHAR(40), DECIMAL(6,2), DATE, DATETIME, TEXT, ENUM('a','b').`);
     const c = { type: map[w], raw: w, len: null, prec: null, scale: null };
+    if (c.type === 'enum') {
+      this.needOp('('); c.vals = []; do { const s = this.cur; if (s.t !== 'str') this.fail(); this.i++; c.vals.push(s.v); } while (this.eatOp(',')); this.needOp(')');
+      return c;
+    }
     if (this.eatOp('(')) { const a = this.cur; if (a.t !== 'num') this.fail(); this.i++; if (c.type === 'decimal') { c.prec = a.v; c.scale = 0; } else c.len = a.v; if (this.eatOp(',')) { const b = this.cur; if (b.t !== 'num') this.fail(); this.i++; c.scale = b.v; } this.needOp(')'); }
     else if (c.type === 'decimal') { c.prec = 10; c.scale = 0; }
     if ((c.type === 'varchar') && c.len == null) throw err(1064, '42000', 'VARCHAR precisa de um tamanho, por exemplo VARCHAR(40).');
+    if (c.type === 'float' && c.scale != null && c.len != null) { c.prec = c.len; }
     if (this.eatKw('UNSIGNED')) c.unsigned = true;
+    this.eatKw('ZEROFILL');
     return c;
   }
   colDef() {
     const n = this.ident(); const c = Object.assign({ n, nn: false, ai: false, pk: false, def: undefined, uniq: false }, this.colType());
     for (;;) {
+      if (this.eatKw('CHARACTER')) { this.needKw('SET'); this.ident(); }
+      else if (this.eatKw('CHARSET')) { this.ident(); }
+      else if (this.eatKw('COLLATE')) { this.ident(); }
+      else if (this.kw('ON') && (this.kw('UPDATE', 1))) { this.i += 2; this.expr(); c.onupd = true; }
+      else if (this.eatKw('CHECK')) { const a = this.cur.pos; this.needOp('('); const e = this.expr(); this.needOp(')'); c.checks = (c.checks || []).concat([{ e, text: this.src.slice(a + 1, this.t[this.i - 1].pos).trim() }]); }
+      else if (this.kw('KEY') ) { this.i++; c.pk = true; c.nn = true; }
+      else if (this.eatKw('COMMENT')) { if (this.cur.t !== 'str') this.fail(); this.i++; }
+      else
       if (this.eatKw('NOT')) { this.needKw('NULL'); c.nn = true; }
       else if (this.eatKw('NULL')) { /* padrão */ }
       else if (this.eatKw('AUTO_INCREMENT')) c.ai = true;
@@ -688,65 +766,131 @@ class Parser {
       else if (this.eatKw('UNIQUE')) { this.eatKw('KEY'); c.uniq = true; }
       else if (this.eatKw('DEFAULT')) { const e = this.unary(); c.def = e; }
       else if (this.eatKw('COMMENT')) { if (this.cur.t !== 'str') this.fail(); this.i++; }
-      else if (this.eatKw('REFERENCES')) { const r = this.tref(); this.needOp('('); const rc = this.ident(); this.needOp(')'); c.ref = { rt: r.name, rc }; }
+      else if (this.eatKw('REFERENCES')) { const r = this.tref(); this.needOp('('); const rc = this.ident(); this.needOp(')'); c.ref = this.fkActions({ rt: r.name, rc }); }
       else break;
     }
     return c;
   }
+  fkActions(f) {
+    while (this.kw('ON') && (this.kw('DELETE', 1) || this.kw('UPDATE', 1))) {
+      this.i++; const ev = this.cur.v.toUpperCase(); this.i++; let act;
+      if (this.eatKw('SET')) { if (this.eatKw('DEFAULT')) act = 'SET DEFAULT'; else { this.needKw('NULL'); act = 'SET NULL'; } }
+      else if (this.eatKw('NO')) { this.needKw('ACTION'); act = 'NO ACTION'; }
+      else { act = this.cur.v.toUpperCase(); if (!['CASCADE', 'RESTRICT'].includes(act)) this.fail(); this.i++; }
+      if (ev === 'DELETE') f.onDelete = act; else f.onUpdate = act;
+    }
+    return f;
+  }
+  colList() { this.needOp('('); const c = [this.ident()]; while (this.eatOp(',')) c.push(this.ident()); this.needOp(')'); return c; }
+  checkDef(name) { const a = this.cur.pos; this.needOp('('); const e = this.expr(); this.needOp(')'); return { e, text: this.src.slice(a + 1, this.t[this.i - 1].pos).trim(), name: name || null }; }
   create() {
-    this.needKw('CREATE');
-    if (this.eatKw('DATABASE') || this.eatKw('SCHEMA')) { let ine = false; if (this.eatKw('IF')) { this.needKw('NOT'); this.needKw('EXISTS'); ine = true; } return { k: 'createdb', name: this.ident(), ine }; }
+    this.needKw('CREATE'); let replace = false;
+    if (this.kw('OR') && this.kw('REPLACE', 1)) { this.i += 2; replace = true; }
+    if (this.eatKw('VIEW')) {
+      const r = this.tref(); let cols = null; if (this.op('(')) cols = this.colList();
+      this.needKw('AS'); const a = this.cur.pos; const sel = this.selectUnion();
+      return { k: 'createview', db: r.db, name: r.name, cols, sel, text: this.src.slice(a, this.t[this.i - 1].end), replace };
+    }
+    if (this.kw('UNIQUE') || this.kw('INDEX')) {
+      const uniq = this.eatKw('UNIQUE'); this.needKw('INDEX'); this.ident(); this.needKw('ON'); const r = this.tref(); const cols = this.colList();
+      return { k: 'alter', db: r.db, tbl: r.name, specs: [uniq ? { op: 'adduniq', cols } : { op: 'noop' }] };
+    }
+    this.eatKw('TEMPORARY');
+    if (this.eatKw('DATABASE') || this.eatKw('SCHEMA')) { let ine = false; if (this.eatKw('IF')) { this.needKw('NOT'); this.needKw('EXISTS'); ine = true; } const name = this.ident(); while (this.cur.t !== 'eof' && !this.op(';')) this.i++; return { k: 'createdb', name, ine }; }
     this.needKw('TABLE'); let ine = false; if (this.eatKw('IF')) { this.needKw('NOT'); this.needKw('EXISTS'); ine = true; }
-    const r = this.tref(); this.needOp('(');
-    const cols = [], fks = []; let pkCols = null;
+    const r = this.tref();
+    if (this.eatKw('LIKE')) { const o = this.tref(); return { k: 'createlike', db: r.db, name: r.name, odb: o.db, oname: o.name, ine }; }
+    if (this.kw('AS') || this.kw('SELECT')) { this.eatKw('AS'); return { k: 'createas', db: r.db, name: r.name, sel: this.selectUnion(), ine }; }
+    this.needOp('(');
+    const cols = [], fks = [], checks = [], uniqs = []; let pkCols = null;
     do {
-      if (this.eatKw('CONSTRAINT')) { if (!this.kw('PRIMARY') && !this.kw('FOREIGN') && !this.kw('UNIQUE')) this.ident(); }
-      if (this.kw('PRIMARY')) { this.i++; this.needKw('KEY'); this.needOp('('); pkCols = [this.ident()]; while (this.eatOp(',')) pkCols.push(this.ident()); this.needOp(')'); }
+      let cname = null;
+      if (this.eatKw('CONSTRAINT')) { if (!this.kw('PRIMARY') && !this.kw('FOREIGN') && !this.kw('UNIQUE') && !this.kw('CHECK')) cname = this.ident(); }
+      if (this.kw('PRIMARY')) { this.i++; this.needKw('KEY'); pkCols = this.colList(); }
       else if (this.kw('FOREIGN')) {
-        this.i++; this.needKw('KEY'); this.needOp('('); const col = this.ident(); this.needOp(')'); this.needKw('REFERENCES');
-        const rt = this.tref(); this.needOp('('); const rc = this.ident(); this.needOp(')');
-        while (this.kw('ON')) { this.i++; this.i++; if (this.eatKw('SET')) this.i++; else if (this.eatKw('NO')) this.i++; else this.i++; }
-        fks.push({ col, rt: rt.name, rc });
+        this.i++; this.needKw('KEY'); if ((this.cur.t === 'id' || this.cur.t === 'qid') && !this.op('(')) this.ident(); const col = this.colList()[0]; this.needKw('REFERENCES');
+        const rt = this.tref(); const rc = this.colList()[0];
+        fks.push(this.fkActions({ col, rt: rt.name, rc, name: cname }));
       }
-      else if (this.kw('KEY') || this.kw('INDEX')) { this.i++; if (this.cur.t === 'id') this.i++; this.needOp('('); this.ident(); while (this.eatOp(',')) this.ident(); this.needOp(')'); }
-      else if (this.kw('UNIQUE')) { this.i++; this.eatKw('KEY'); if (this.cur.t === 'id') this.i++; this.needOp('('); const u = this.ident(); this.needOp(')'); cols.push({ __uniq: u }); }
+      else if (this.kw('CHECK')) { this.i++; checks.push(this.checkDef(cname)); }
+      else if (this.kw('KEY') || this.kw('INDEX') || this.kw('FULLTEXT')) { this.i++; if (this.kw('KEY') || this.kw('INDEX')) this.i++; if ((this.cur.t === 'id' || this.cur.t === 'qid') && !this.op('(')) this.i++; this.colList(); }
+      else if (this.kw('UNIQUE')) { this.i++; this.eatKw('KEY') || this.eatKw('INDEX'); if ((this.cur.t === 'id' || this.cur.t === 'qid') && !this.op('(')) this.i++; const u = this.colList(); if (u.length === 1) cols.push({ __uniq: u[0] }); else uniqs.push(u); }
       else cols.push(this.colDef());
     } while (this.eatOp(','));
     this.needOp(')');
-    while (this.cur.t !== 'eof' && !this.op(';')) this.i++;   // ENGINE=..., CHARSET=...
-    return { k: 'createtable', db: r.db, name: r.name, cols, fks, pkCols, ine };
+    let ai = null;
+    while (this.cur.t !== 'eof' && !this.op(';')) {
+      if (this.kw('AUTO_INCREMENT')) { this.i++; this.eatOp('='); if (this.cur.t === 'num') ai = this.cur.v; }
+      if (this.kw('AS') || this.kw('SELECT')) this.fail();
+      this.i++;
+    }
+    return { k: 'createtable', db: r.db, name: r.name, cols, fks, pkCols, ine, checks, uniqs, ai };
   }
   drop() {
     this.needKw('DROP');
     if (this.eatKw('DATABASE') || this.eatKw('SCHEMA')) { let ie = false; if (this.eatKw('IF')) { this.needKw('EXISTS'); ie = true; } return { k: 'dropdb', name: this.ident(), ie }; }
-    this.needKw('TABLE'); let ie = false; if (this.eatKw('IF')) { this.needKw('EXISTS'); ie = true; }
-    const r = this.tref(); return { k: 'droptable', db: r.db, name: r.name, ie };
+    if (this.kw('INDEX')) { this.i++; this.ident(); this.needKw('ON'); const r = this.tref(); return { k: 'alter', db: r.db, tbl: r.name, specs: [{ op: 'noop' }] }; }
+    this.eatKw('TEMPORARY');
+    const view = this.eatKw('VIEW'); if (!view) this.needKw('TABLE');
+    let ie = false; if (this.eatKw('IF')) { this.needKw('EXISTS'); ie = true; }
+    const list = []; do { const r = this.tref(); list.push({ db: r.db, name: r.name }); } while (this.eatOp(','));
+    return { k: view ? 'dropview' : 'droptable', db: list[0].db, name: list[0].name, ie, list };
   }
   alter() {
-    this.needKw('ALTER'); this.needKw('TABLE'); const r = this.tref(); const a = { k: 'alter', db: r.db, tbl: r.name };
+    this.needKw('ALTER'); this.needKw('TABLE'); const r = this.tref(); const a = { k: 'alter', db: r.db, tbl: r.name, specs: [] };
+    do { a.specs.push(this.alterSpec()); } while (this.eatOp(','));
+    return a;
+  }
+  alterSpec() {
+    const a = {};
     if (this.eatKw('ADD')) {
-      if (this.kw('FOREIGN') || this.kw('CONSTRAINT')) {
-        if (this.eatKw('CONSTRAINT')) this.ident();
-        this.needKw('FOREIGN'); this.needKw('KEY'); this.needOp('('); const col = this.ident(); this.needOp(')'); this.needKw('REFERENCES');
-        const rt = this.tref(); this.needOp('('); const rc = this.ident(); this.needOp(')'); a.op = 'addfk'; a.fk = { col, rt: rt.name, rc }; return a;
+      let cname = null;
+      if (this.eatKw('CONSTRAINT')) { if (!this.kw('PRIMARY') && !this.kw('FOREIGN') && !this.kw('UNIQUE') && !this.kw('CHECK')) cname = this.ident(); }
+      if (this.eatKw('FOREIGN')) {
+        this.needKw('KEY'); if ((this.cur.t === 'id' || this.cur.t === 'qid') && !this.op('(')) cname = this.ident(); const col = this.colList()[0]; this.needKw('REFERENCES');
+        const rt = this.tref(); const rc = this.colList()[0]; a.op = 'addfk'; a.fk = this.fkActions({ col, rt: rt.name, rc, name: cname }); return a;
       }
+      if (this.eatKw('PRIMARY')) { this.needKw('KEY'); a.op = 'addpk'; a.cols = this.colList(); return a; }
+      if (this.eatKw('UNIQUE')) { this.eatKw('KEY') || this.eatKw('INDEX'); if ((this.cur.t === 'id' || this.cur.t === 'qid') && !this.op('(')) this.i++; a.op = 'adduniq'; a.cols = this.colList(); return a; }
+      if (this.eatKw('CHECK')) { a.op = 'addcheck'; a.chk = this.checkDef(cname); return a; }
+      if (this.kw('INDEX') || this.kw('KEY')) { this.i++; if ((this.cur.t === 'id' || this.cur.t === 'qid') && !this.op('(')) this.i++; this.colList(); a.op = 'noop'; return a; }
       this.eatKw('COLUMN'); a.op = 'add'; a.col = this.colDef();
       if (this.eatKw('FIRST')) a.first = true; else if (this.eatKw('AFTER')) a.after = this.ident();
-    } else if (this.eatKw('DROP')) { this.eatKw('COLUMN'); a.op = 'drop'; a.name = this.ident(); }
-    else if (this.eatKw('MODIFY')) { this.eatKw('COLUMN'); a.op = 'modify'; a.col = this.colDef(); }
+    } else if (this.eatKw('DROP')) {
+      if (this.eatKw('PRIMARY')) { this.needKw('KEY'); a.op = 'droppk'; }
+      else if (this.eatKw('FOREIGN')) { this.needKw('KEY'); a.op = 'dropfk'; a.name = this.ident(); }
+      else if (this.kw('INDEX') || this.kw('KEY')) { this.i++; this.ident(); a.op = 'noop'; }
+      else if (this.eatKw('CHECK') || this.eatKw('CONSTRAINT')) { a.op = 'dropcheck'; a.name = this.ident(); }
+      else { this.eatKw('COLUMN'); a.op = 'drop'; a.name = this.ident(); }
+    }
+    else if (this.eatKw('MODIFY')) { this.eatKw('COLUMN'); a.op = 'modify'; a.col = this.colDef(); if (this.eatKw('FIRST')) a.first = true; else if (this.eatKw('AFTER')) a.after = this.ident(); }
+    else if (this.eatKw('CHANGE')) { this.eatKw('COLUMN'); a.op = 'change'; a.name = this.ident(); a.col = this.colDef(); }
     else if (this.eatKw('RENAME')) {
       if (this.eatKw('COLUMN')) { a.op = 'rencol'; a.name = this.ident(); this.needKw('TO'); a.to = this.ident(); }
-      else { this.eatKw('TO'); a.op = 'rentbl'; a.to = this.ident(); }
-    } else this.fail();
+      else if (this.eatKw('INDEX') || this.eatKw('KEY')) { this.ident(); this.needKw('TO'); this.ident(); a.op = 'noop'; }
+      else { this.eatKw('TO') || this.eatKw('AS'); a.op = 'rentbl'; a.to = this.ident(); }
+    }
+    else if (this.eatKw('ALTER')) {
+      this.eatKw('COLUMN'); a.name = this.ident();
+      if (this.eatKw('SET')) { this.needKw('DEFAULT'); a.op = 'setdef'; a.e = this.unary(); }
+      else { this.needKw('DROP'); this.needKw('DEFAULT'); a.op = 'dropdef'; }
+    }
+    else if (this.eatKw('AUTO_INCREMENT')) { this.eatOp('='); const n = this.cur; if (n.t !== 'num') this.fail(); this.i++; a.op = 'setai'; a.n = n.v; }
+    else if (this.kw('ENGINE') || this.kw('CHARSET') || this.kw('COMMENT') || this.kw('COLLATE') || this.kw('ROW_FORMAT') || this.kw('DEFAULT') || this.kw('CONVERT')) {
+      while (this.cur.t !== 'eof' && !this.op(',') && !this.op(';')) this.i++; a.op = 'noop';
+    }
+    else this.fail();
     return a;
   }
   show() {
     this.needKw('SHOW'); this.eatKw('FULL');
     if (this.eatKw('DATABASES') || this.eatKw('SCHEMAS')) return { k: 'showdbs' };
-    if (this.eatKw('TABLES')) { let db = null; if (this.eatKw('FROM') || this.eatKw('IN')) db = this.ident(); return { k: 'showtables', db }; }
+    if (this.eatKw('TABLES')) { let db = null, like = null; if (this.eatKw('FROM') || this.eatKw('IN')) db = this.ident(); if (this.eatKw('LIKE')) { const s = this.cur; if (s.t !== 'str') this.fail(); this.i++; like = s.v; } return { k: 'showtables', db, like }; }
     if (this.eatKw('COLUMNS') || this.eatKw('FIELDS')) { if (!this.eatKw('FROM')) this.needKw('IN'); const r = this.tref(); let db = r.db; if (this.eatKw('FROM') || this.eatKw('IN')) db = this.ident(); return { k: 'describe', tbl: r.name, db }; }
-    if (this.eatKw('CREATE')) { this.needKw('TABLE'); const r = this.tref(); return { k: 'showcreate', tbl: r.name, db: r.db }; }
-    throw err(1064, '42000', 'Esse SHOW não é suportado aqui. Use SHOW DATABASES; SHOW TABLES; ou SHOW CREATE TABLE nome;');
+    if (this.eatKw('INDEX') || this.eatKw('INDEXES') || this.eatKw('KEYS')) { if (!this.eatKw('FROM')) this.needKw('IN'); const r = this.tref(); return { k: 'showindex', tbl: r.name, db: r.db }; }
+    if (this.eatKw('CREATE')) { const view = this.eatKw('VIEW'); if (!view) this.needKw('TABLE'); const r = this.tref(); return { k: 'showcreate', tbl: r.name, db: r.db, view }; }
+    if (this.eatKw('WARNINGS') || this.eatKw('ERRORS')) return { k: 'showwarn' };
+    throw err(1064, '42000', 'Esse SHOW não é suportado aqui. Use SHOW DATABASES; SHOW TABLES; SHOW COLUMNS FROM t; SHOW INDEX FROM t; ou SHOW CREATE TABLE nome;');
   }
 }
 
@@ -768,7 +912,7 @@ function likeRe(p) {
   for (let i = 0; i < s.length; i++) { const c = s[i]; if (c === '\\' && i + 1 < s.length) { r += s[++i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); } else if (c === '%') r += '[\\s\\S]*'; else if (c === '_') r += '[\\s\\S]'; else r += c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   return new RegExp('^' + r + '$');
 }
-const AGG = new Set(['COUNT', 'SUM', 'AVG', 'MIN', 'MAX']);
+const AGG = new Set(['COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'GROUP_CONCAT']);
 function kids(e) {
   switch (e.k) {
     case 'bin': return [e.l, e.r]; case 'not': case 'neg': case 'isnull': case 'istf': return [e.e];
@@ -783,7 +927,7 @@ const hasAgg = e => { let f = false; walk(e, x => { if (x.k === 'fn' && AGG.has(
 
 /* ---------- servidor ---------- */
 class Server {
-  constructor() { this.dbs = {}; this.cur = null; this.safe = false; this.clause = ''; }
+  constructor() { this.dbs = {}; this.cur = null; this.safe = false; this.clause = ''; this.vars = {}; this.txn = null; this.lastId = 0; }
   static fresh(dbsObj, cur) { const s = new Server(); s.dbs = JSON.parse(JSON.stringify(dbsObj)); s.cur = cur; return s; }
   clone() { const s = Server.fresh(this.dbs, this.cur); s.safe = this.safe; return s; }
   snapshot() { return JSON.parse(JSON.stringify(this.dbs)); }
@@ -810,12 +954,27 @@ class Server {
   }
   exec(sql) {
     const st = new Parser(sql).statement();
+    if (['createdb', 'dropdb', 'createtable', 'droptable', 'alter', 'truncate', 'rename', 'createview', 'dropview', 'createlike', 'createas'].includes(st.k)) this.txn = null;
+    const res = this.exec2(st);
+    if (res && res.refresh && st.k !== 'select') this.refreshViews();
+    return res;
+  }
+  exec2(st) {
     switch (st.k) {
-      case 'select': { this.clause = ''; const r = this.runSelect(st, null); return { type: 'rows', cols: r.cols, rows: r.rows, msg: `${r.rows.length} linha(s) retornada(s)` }; }
+      case 'select': case 'union': { this.clause = ''; const r = this.runSelect(st, null); return { type: 'rows', cols: r.cols, rows: r.rows, msg: `${r.rows.length} linha(s) retornada(s)` }; }
+      case 'showindex': return this.doShowIndex(st);
+      case 'showwarn': return { type: 'rows', cols: [{ name: 'Level' }, { name: 'Code' }, { name: 'Message' }], rows: [], msg: '0 linha(s) retornada(s)' };
+      case 'txn': return this.doTxn(st);
+      case 'set': return this.doSet(st);
+      case 'rename': return this.doRename(st);
+      case 'createview': return this.createView(st);
+      case 'dropview': return this.dropView(st);
+      case 'createlike': return this.createLike(st);
+      case 'createas': return this.createAs(st);
       case 'showdbs': return { type: 'rows', cols: [{ name: 'Database' }], rows: this.dbNames().map(n => [n]), msg: `${this.dbNames().length} linha(s) retornada(s)` };
-      case 'showtables': { const d = this.useDb(st.db); const names = Object.keys(d.tables).sort((a, b) => a.localeCompare(b)); return { type: 'rows', cols: [{ name: 'Tables_in_' + d.name }], rows: names.map(n => [n]), msg: `${names.length} linha(s) retornada(s)` }; }
+      case 'showtables': { const d = this.useDb(st.db); let names = Object.keys(d.tables).sort((a, b) => a.localeCompare(b)); if (st.like != null) { const re = likeRe(st.like); names = names.filter(n => re.test(fold(n))); } return { type: 'rows', cols: [{ name: 'Tables_in_' + d.name }], rows: names.map(n => [n]), msg: `${names.length} linha(s) retornada(s)` }; }
       case 'describe': return this.doDescribe(st);
-      case 'showcreate': { const t = this.table(st.db, st.tbl); return { type: 'rows', cols: [{ name: 'Table' }, { name: 'Create Table' }], rows: [[t.name, ddl(t)]], msg: '1 linha(s) retornada(s)' }; }
+      case 'showcreate': { const t = this.table(st.db, st.tbl); if (st.view && !t.view) throw err(1347, 'HY000', `'${t.name}' é uma tabela, não uma view. Use SHOW CREATE TABLE.`); if (t.view) return { type: 'rows', cols: [{ name: 'View' }, { name: 'Create View' }], rows: [[t.name, `CREATE VIEW \`${t.name}\` AS ${t.text}`]], msg: '1 linha(s) retornada(s)' }; return { type: 'rows', cols: [{ name: 'Table' }, { name: 'Create Table' }], rows: [[t.name, ddl(t)]], msg: '1 linha(s) retornada(s)' }; }
       case 'use': { const d = this.useDb(st.db); this.cur = d.name; return { type: 'ok', affected: 0, msg: 'Banco de dados alterado', refresh: true }; }
       case 'createdb': {
         if (this.getDb(st.name)) { if (st.ine) return { type: 'ok', affected: 1, msg: '1 linha(s) afetada(s), 1 aviso(s): o banco já existia', refresh: true }; throw err(1007, 'HY000', `Não é possível criar o banco '${st.name}': ele já existe.`); }
@@ -825,7 +984,7 @@ class Server {
       case 'createtable': return this.createTable(st);
       case 'droptable': return this.dropTable(st);
       case 'alter': return this.alterTable(st);
-      case 'truncate': { const t = this.table(st.db, st.tbl); const dbn = this.useDb(st.db); this.checkChildren(dbn, t, null, true); t.rows = []; t.ai = 1; return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s)', refresh: true }; }
+      case 'truncate': { const t = this.wtable(st.db, st.tbl); const dbn = this.useDb(st.db); this.checkChildren(dbn, t, null, true); t.rows = []; t.ai = 1; return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s)', refresh: true }; }
       case 'insert': return this.doInsert(st);
       case 'update': return this.doUpdate(st);
       case 'delete': return this.doDelete(st);
@@ -834,81 +993,230 @@ class Server {
   }
   doDescribe(st) {
     const t = this.table(st.db, st.tbl); const fkc = new Set(t.fks.map(f => f.col.toLowerCase()));
-    const rows = t.cols.map(c => [c.n, typeStr(c), c.nn && !c.pk ? 'NO' : c.pk ? 'NO' : 'YES', c.pk ? 'PRI' : fkc.has(c.n.toLowerCase()) ? 'MUL' : c.uniq ? 'UNI' : '', c.def !== undefined && c.def !== null ? String(c.def) : null, c.ai ? 'auto_increment' : '']);
+    const rows = t.cols.map(c => [c.n, typeStr(c), c.nn && !c.pk ? 'NO' : c.pk ? 'NO' : 'YES', c.pk ? 'PRI' : fkc.has(c.n.toLowerCase()) ? 'MUL' : c.uniq ? 'UNI' : '', c.def !== undefined && c.def !== null ? (c.def.dyn ? 'CURRENT_TIMESTAMP' : String(c.def)) : null, c.ai ? 'auto_increment' : '']);
     return { type: 'rows', cols: [{ name: 'Field' }, { name: 'Type' }, { name: 'Null' }, { name: 'Key' }, { name: 'Default' }, { name: 'Extra' }], rows, msg: `${rows.length} linha(s) retornada(s)` };
   }
+  wtable(db, name) { const t = this.table(db, name); if (t.view) throw err(1288, 'HY000', `'${t.name}' é uma view: não dá para inserir, alterar ou apagar dados nela. Altere as tabelas base.`); return t; }
+  restore(d, snap) { Object.keys(d.tables).forEach(k => delete d.tables[k]); Object.assign(d.tables, JSON.parse(snap)); }
+  nowStr(type) { return this.fn({ name: type === 'date' ? 'CURDATE' : type === 'time' ? 'CURTIME' : 'NOW', args: [] }, { src: [], row: [], parent: null }, null); }
+  doTxn(st) {
+    if (st.op === 'begin') { this.txn = JSON.stringify(this.dbs); return { type: 'ok', affected: 0, msg: 'Transação iniciada. Use COMMIT para confirmar ou ROLLBACK para desfazer.' }; }
+    if (st.op === 'commit') { this.txn = null; return { type: 'ok', affected: 0, msg: 'Transação confirmada (COMMIT).' }; }
+    if (this.txn == null) return { type: 'ok', affected: 0, msg: 'Nenhuma transação aberta: não havia nada para desfazer.' };
+    this.dbs = JSON.parse(this.txn); this.txn = null; if (this.cur && !this.getDb(this.cur)) this.cur = null;
+    return { type: 'ok', affected: 0, msg: 'ROLLBACK feito: as alterações desde o START TRANSACTION foram desfeitas.', refresh: true };
+  }
+  doSet(st) {
+    const sc = { src: [], row: [], parent: null };
+    for (const it of st.items) {
+      const v = it.e.k === 'col' && !it.e.t ? it.e.c : this.ev(it.e, sc, null);
+      if (it.n[0] === '@') { this.vars[it.n.slice(1).toLowerCase()] = v; continue; }
+      if (it.n.toLowerCase() === 'sql_safe_updates') this.safe = typeof v === 'string' ? /^(on|1|true)$/i.test(v) : truthy(v);
+    }
+    return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s)', refresh: true };
+  }
+  doRename(st) {
+    for (const pr of st.pairs) {
+      const d = this.useDb(pr.db); const t = this.table(pr.db, pr.from);
+      if (Object.keys(d.tables).some(x => x.toLowerCase() === pr.to.toLowerCase())) throw err(1050, '42S01', `A tabela '${pr.to}' já existe.`);
+      this.alterOne(d, t, { op: 'rentbl', to: pr.to });
+    }
+    return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s)', refresh: true };
+  }
+  doShowIndex(st) {
+    const t = this.table(st.db, st.tbl); const rows = []; const fkc = new Set();
+    t.cols.filter(c => c.pk).forEach((c, i) => rows.push([t.name, 0, 'PRIMARY', i + 1, c.n]));
+    t.cols.filter(c => c.uniq && !c.pk).forEach(c => rows.push([t.name, 0, c.n, 1, c.n]));
+    (t.uniqs || []).forEach((u, k) => u.forEach((c, i) => rows.push([t.name, 0, u.join('_'), i + 1, c])));
+    t.fks.forEach(f => rows.push([t.name, 1, f.name, 1, f.col]));
+    return { type: 'rows', cols: [{ name: 'Table' }, { name: 'Non_unique' }, { name: 'Key_name' }, { name: 'Seq_in_index' }, { name: 'Column_name' }], rows, msg: `${rows.length} linha(s) retornada(s)` };
+  }
+  /* ----- views ----- */
+  viewCols(res, names, ren) {
+    if (names && names.length !== res.cols.length) throw err(1353, 'HY000', 'A lista de colunas da view tem quantidade diferente das colunas do SELECT.');
+    const nm = names || res.cols.map(c => c.name);
+    return nm.map((n, i) => ({ n, type: 'varchar', raw: 'VARCHAR', len: 255, prec: null, scale: res.cols[i].scale == null ? null : res.cols[i].scale, nn: false, ai: false, pk: false, def: undefined, uniq: false, vscale: res.cols[i].scale }));
+  }
+  runView(dbName, v) {
+    const keep = this.cur; this.cur = dbName;
+    try { const r = this.runSelect(v.sel, null); return { cols: r.cols.map((c, i) => ({ name: v.vnames ? v.vnames[i] : c.name, scale: c.scale })), rows: r.rows }; }
+    catch (e) { if (e instanceof SqlError && e.code !== 1356) throw err(1356, 'HY000', `A view '${v.name}' é inválida: ${e.message}`); throw e; }
+    finally { this.cur = keep; }
+  }
+  refreshViews() {
+    for (const dn of Object.keys(this.dbs)) for (const v of Object.values(this.dbs[dn])) if (v.view) {
+      try { const r = this.runView(dn, v); v.rows = r.rows.map(x => x.slice()); v.cols.forEach((c, i) => { c.scale = r.cols[i] ? r.cols[i].scale : null; c.vscale = c.scale; }); v.invalid = false; } catch (e) { v.rows = []; v.invalid = true; }
+    }
+  }
+  createView(st) {
+    const d = this.useDb(st.db); const dup = Object.keys(d.tables).find(x => x.toLowerCase() === st.name.toLowerCase());
+    if (dup && !(st.replace && d.tables[dup].view)) throw err(1050, '42S01', `A tabela ou view '${st.name}' já existe.`);
+    const keep = this.cur; this.cur = d.name; let res; try { this.clause = ''; res = this.runSelect(st.sel, null); } finally { this.cur = keep; }
+    const cols = this.viewCols(res, st.cols);
+    if (new Set(cols.map(c => c.n.toLowerCase())).size !== cols.length) throw err(1060, '42S21', 'A view teria nomes de coluna repetidos. Use AS para dar apelidos diferentes.');
+    if (dup) delete d.tables[dup];
+    d.tables[st.name] = { name: st.name, view: true, text: st.text, sel: st.sel, vnames: st.cols, cols, rows: res.rows.map(x => x.slice()), fks: [], ai: 1 };
+    return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s)', refresh: true };
+  }
+  dropView(st) {
+    const d = this.useDb(st.db);
+    for (const it of st.list) {
+      const dd = this.useDb(it.db); const k = Object.keys(dd.tables).find(x => x.toLowerCase() === it.name.toLowerCase());
+      if (!k) { if (st.ie) continue; throw err(1051, '42S02', `View '${dd.name}.${it.name}' desconhecida.`); }
+      if (!dd.tables[k].view) throw err(1347, 'HY000', `'${dd.name}.${k}' é uma tabela, não uma view. Use DROP TABLE.`);
+      delete dd.tables[k];
+    }
+    return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s)', refresh: true };
+  }
+  createLike(st) {
+    const d = this.useDb(st.db); const o = this.table(st.odb, st.oname);
+    if (Object.keys(d.tables).some(x => x.toLowerCase() === st.name.toLowerCase())) { if (st.ine) return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s), 1 aviso(s): a tabela já existe', refresh: true }; throw err(1050, '42S01', `A tabela '${st.name}' já existe.`); }
+    if (o.view) throw err(1347, 'HY000', 'CREATE TABLE ... LIKE não funciona com view.');
+    const c = JSON.parse(JSON.stringify(o)); c.name = st.name; c.rows = []; c.fks = []; c.ai = 1;
+    d.tables[st.name] = c; return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s)', refresh: true };
+  }
+  createAs(st) {
+    const d = this.useDb(st.db);
+    if (Object.keys(d.tables).some(x => x.toLowerCase() === st.name.toLowerCase())) { if (st.ine) return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s), 1 aviso(s): a tabela já existe', refresh: true }; throw err(1050, '42S01', `A tabela '${st.name}' já existe.`); }
+    this.clause = ''; const r = this.runSelect(st.sel, null);
+    if (new Set(r.cols.map(c => c.name.toLowerCase())).size !== r.cols.length) throw err(1060, '42S21', 'Nomes de coluna repetidos no SELECT. Use AS para dar apelidos diferentes.');
+    const cols = r.cols.map((c, i) => {
+      const vals = r.rows.map(x => x[i]).filter(v => v !== null); const base = { n: c.name, nn: false, ai: false, pk: false, def: undefined, uniq: false, len: null, prec: null, scale: null };
+      if (vals.length && vals.every(isNum)) { if (c.scale != null) return Object.assign(base, { type: 'decimal', raw: 'DECIMAL', prec: 12, scale: c.scale }); if (vals.every(Number.isInteger)) return Object.assign(base, { type: 'int', raw: 'INT' }); return Object.assign(base, { type: 'decimal', raw: 'DECIMAL', prec: 12, scale: 2 }); }
+      const mx = Math.max.apply(null, [1].concat(vals.map(v => String(v).length))); return mx > 255 ? Object.assign(base, { type: 'text', raw: 'TEXT' }) : Object.assign(base, { type: 'varchar', raw: 'VARCHAR', len: 255 });
+    });
+    d.tables[st.name] = { name: st.name, cols, rows: r.rows.map(x => x.slice()), fks: [], ai: 1 };
+    return { type: 'ok', affected: r.rows.length, msg: `${r.rows.length} linha(s) afetada(s)  Registros: ${r.rows.length}  Duplicados: 0  Avisos: 0`, refresh: true };
+  }
   /* ----- DDL ----- */
-  evalDefault(c) { if (c.def === undefined) return undefined; if (c.def && c.def.k) { return this.ev(c.def, { src: [], row: [], parent: null }, null); } return c.def; }
+  keepDef(c) { const d = c.def; if (d && d.k === 'fn' && ['NOW', 'CURRENT_TIMESTAMP', 'CURRENT_DATE', 'CURDATE', 'CURRENT_TIME', 'CURTIME'].includes(d.name)) return { dyn: d.name }; return this.evalDefault(c); }
+  evalDefault(c) { if (c.def === undefined) return undefined; if (c.def && c.def.dyn) return this.fn({ name: c.def.dyn, args: [] }, { src: [], row: [], parent: null }, null); if (c.def && c.def.k) { return this.ev(c.def, { src: [], row: [], parent: null }, null); } return c.def; }
   createTable(st) {
     const d = this.useDb(st.db); const dup = Object.keys(d.tables).find(x => x.toLowerCase() === st.name.toLowerCase());
     if (dup) { if (st.ine) return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s), 1 aviso(s): a tabela já existe', refresh: true }; throw err(1050, '42S01', `A tabela '${st.name}' já existe.`); }
-    const cols = []; const fks = st.fks.slice();
+    const cols = []; const fks = st.fks.slice(); const checks = (st.checks || []).slice(); const uniqs = (st.uniqs || []).map(u => u.slice());
     for (const c of st.cols) {
-      if (c.__uniq) { const x = cols.find(y => y.n.toLowerCase() === c.__uniq.toLowerCase()); if (x) x.uniq = true; continue; }
+      if (c.__uniq) { const x = cols.find(y => y.n.toLowerCase() === c.__uniq.toLowerCase()); if (!x) throw err(1072, '42000', `A coluna-chave '${c.__uniq}' não existe na tabela.`); x.uniq = true; continue; }
       if (cols.some(y => y.n.toLowerCase() === c.n.toLowerCase())) throw err(1060, '42S21', `Nome de coluna duplicado '${c.n}'.`);
-      const col = Object.assign({}, c); if (col.def !== undefined) { col.def = this.evalDefault(col); }
-      if (c.ref) { fks.push({ col: c.n, rt: c.ref.rt, rc: c.ref.rc }); delete col.ref; }
+      const col = Object.assign({}, c); if (col.def !== undefined) { col.def = this.keepDef(col); }
+      if (c.ref) { fks.push({ col: c.n, rt: c.ref.rt, rc: c.ref.rc, onDelete: c.ref.onDelete, onUpdate: c.ref.onUpdate }); delete col.ref; }
+      if (col.checks) { col.checks.forEach(k => checks.push({ e: k.e, text: k.text, name: null })); delete col.checks; }
       cols.push(col);
     }
     if (!cols.length) throw err(1113, '42000', 'Uma tabela precisa ter pelo menos uma coluna.');
-    if (st.pkCols) for (const p of st.pkCols) { const x = cols.find(y => y.n.toLowerCase() === p.toLowerCase()); if (!x) throw err(1072, '42000', `A coluna-chave '${p}' não existe na tabela.`); x.pk = true; x.nn = true; }
+    if (st.pkCols) { if (cols.some(c => c.pk)) throw err(1068, '42000', 'Chave primária definida mais de uma vez.'); for (const p of st.pkCols) { const x = cols.find(y => y.n.toLowerCase() === p.toLowerCase()); if (!x) throw err(1072, '42000', `A coluna-chave '${p}' não existe na tabela.`); x.pk = true; x.nn = true; } }
+    if (cols.filter(c => c.pk).length > 0 && cols.filter(c => c.pk).length !== cols.filter(c => c.pk).length) throw err(1068, '42000', 'Chave primária definida mais de uma vez.');
+    for (const u of uniqs) for (const n of u) if (!cols.some(c => c.n.toLowerCase() === n.toLowerCase())) throw err(1072, '42000', `A coluna-chave '${n}' não existe na tabela.`);
     const ais = cols.filter(c => c.ai); if (ais.length > 1) throw err(1075, '42000', 'Só pode existir uma coluna AUTO_INCREMENT.');
     if (ais.length && !ais[0].pk && !ais[0].uniq) throw err(1075, '42000', 'Uma coluna AUTO_INCREMENT precisa ser chave (PRIMARY KEY).');
+    cols.forEach(c => { if (c.type === 'enum' && c.def !== undefined && c.def !== null && !c.def.dyn && !c.vals.some(v => fold(v) === fold(c.def))) throw err(1067, '42000', `Valor padrão inválido para a coluna '${c.n}'.`); });
     const fixed = [];
     fks.forEach((f, i) => {
       const own = cols.find(c => c.n.toLowerCase() === f.col.toLowerCase()); if (!own) throw err(1072, '42000', `A coluna '${f.col}' da chave estrangeira não existe na tabela.`);
       const same = f.rt.toLowerCase() === st.name.toLowerCase();
-      const rt = same ? { cols } : Object.values(d.tables).find(t => t.name.toLowerCase() === f.rt.toLowerCase());
+      const rt = same ? { cols } : Object.values(d.tables).find(t => t.name.toLowerCase() === f.rt.toLowerCase() && !t.view);
       if (!rt) throw err(1824, 'HY000', `Não foi possível abrir a tabela referenciada '${f.rt}'. Crie primeiro a tabela '${f.rt}'.`);
       const rc = rt.cols.find(c => c.n.toLowerCase() === f.rc.toLowerCase()); if (!rc) throw err(1822, 'HY000', `A coluna '${f.rc}' não existe na tabela '${f.rt}'.`);
-      fixed.push({ col: own.n, rt: same ? st.name : rt.name, rc: rc.n, name: `${st.name}_ibfk_${i + 1}` });
+      if ((f.onDelete === 'SET NULL' || f.onUpdate === 'SET NULL') && own.nn) throw err(1830, 'HY000', `A coluna '${own.n}' é NOT NULL e não pode usar SET NULL na chave estrangeira.`);
+      fixed.push({ col: own.n, rt: same ? st.name : rt.name, rc: rc.n, name: f.name || `${st.name}_ibfk_${i + 1}`, onDelete: f.onDelete || null, onUpdate: f.onUpdate || null });
     });
-    d.tables[st.name] = { name: st.name, cols, rows: [], fks: fixed, ai: 1 };
+    const named = checks.map((k, i) => ({ e: k.e, text: k.text, name: k.name || `${st.name}_chk_${i + 1}` }));
+    d.tables[st.name] = { name: st.name, cols, rows: [], fks: fixed, ai: st.ai || 1, checks: named, uniqs };
     return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s)', refresh: true };
   }
   dropTable(st) {
-    const d = this.useDb(st.db); const k = Object.keys(d.tables).find(x => x.toLowerCase() === st.name.toLowerCase());
-    if (!k) { if (st.ie) return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s), 1 aviso(s)', refresh: true }; throw err(1051, '42S02', `Tabela '${d.name}.${st.name}' desconhecida.`); }
-    for (const t of Object.values(d.tables)) for (const f of t.fks) if (f.rt.toLowerCase() === k.toLowerCase() && t.name !== k) throw err(3730, 'HY000', `Não dá para apagar a tabela '${k}': a tabela '${t.name}' depende dela por uma chave estrangeira (${f.name}). Apague '${t.name}' primeiro.`);
-    delete d.tables[k]; return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s)', refresh: true };
+    for (const it of st.list) {
+      const d = this.useDb(it.db); const k = Object.keys(d.tables).find(x => x.toLowerCase() === it.name.toLowerCase());
+      if (!k) { if (st.ie) continue; throw err(1051, '42S02', `Tabela '${d.name}.${it.name}' desconhecida.`); }
+      if (d.tables[k].view) throw err(1051, '42S02', `'${d.name}.${k}' é uma view. Use DROP VIEW ${k};`);
+      for (const t of Object.values(d.tables)) for (const f of (t.fks || [])) if (f.rt.toLowerCase() === k.toLowerCase() && t.name !== k && !st.list.some(x => x.name.toLowerCase() === t.name.toLowerCase())) throw err(3730, 'HY000', `Não dá para apagar a tabela '${k}': a tabela '${t.name}' depende dela por uma chave estrangeira (${f.name}). Apague '${t.name}' primeiro.`);
+      delete d.tables[k];
+    }
+    return { type: 'ok', affected: 0, msg: '0 linha(s) afetada(s)', refresh: true };
   }
   alterTable(st) {
-    const d = this.useDb(st.db); const t = this.table(st.db, st.tbl); const find = n => t.cols.findIndex(c => c.n.toLowerCase() === String(n).toLowerCase());
+    const d = this.useDb(st.db); const t = this.wtable(st.db, st.tbl); const snap = JSON.stringify(d.tables); const name0 = t.name;
+    try { for (const sp of st.specs) this.alterOne(d, t, sp); }
+    catch (e) { this.restore(d, snap); throw e; }
+    return { type: 'ok', affected: 0, msg: `0 linha(s) afetada(s)  Registros: ${t.rows.length}  Duplicados: 0  Avisos: 0`, refresh: true };
+  }
+  checkScope(t) { return { src: [{ alias: t.name, name: t.name, cols: t.cols.map(c => ({ n: c.n, scale: c.type === 'decimal' ? c.scale : null })) }], row: null, parent: null }; }
+  alterOne(d, t, st) {
+    const find = n => t.cols.findIndex(c => c.n.toLowerCase() === String(n).toLowerCase());
+    const place = (col, i, sp) => { let pos = i; if (sp.first) pos = 0; else if (sp.after) { const a = find(sp.after); if (a < 0) throw err(1054, '42S22', `Coluna '${sp.after}' desconhecida.`); pos = a + 1; } return pos; };
+    if (st.op === 'noop') return;
     if (st.op === 'add') {
       if (find(st.col.n) >= 0) throw err(1060, '42S21', `Nome de coluna duplicado '${st.col.n}'.`);
-      const col = Object.assign({}, st.col); if (col.def !== undefined) col.def = this.evalDefault(col); delete col.ref;
+      const col = Object.assign({}, st.col); if (col.def !== undefined) col.def = this.keepDef(col); delete col.ref; if (col.checks) { col.checks.forEach(k => { t.checks = t.checks || []; t.checks.push({ e: k.e, text: k.text, name: `${t.name}_chk_${t.checks.length + 1}` }); }); delete col.checks; }
+      if (col.pk && t.cols.some(c => c.pk)) throw err(1068, '42000', 'Já existe uma chave primária nesta tabela.');
       let pos = t.cols.length; if (st.first) pos = 0; else if (st.after) { const a = find(st.after); if (a < 0) throw err(1054, '42S22', `Coluna '${st.after}' desconhecida.`); pos = a + 1; }
-      let fill = col.def !== undefined ? col.def : null; if (fill === null && col.nn) fill = ['int', 'decimal', 'float', 'bool'].includes(col.type) ? 0 : '';
+      let fill = col.def !== undefined ? this.evalDefault(col) : null; if (fill === null && col.nn) fill = ['int', 'decimal', 'float', 'bool', 'year'].includes(col.type) ? 0 : col.type === 'enum' ? col.vals[0] : '';
       if (fill !== null) fill = this.coerce(col, fill, 1);
       t.cols.splice(pos, 0, col); t.rows.forEach(r => r.splice(pos, 0, fill));
-      if (col.ai) { t.ai = 1; t.rows.forEach((r, i) => { r[pos] = i + 1; }); t.ai = t.rows.length + 1; }
+      if (col.ai) { t.rows.forEach((r, i) => { r[pos] = i + 1; }); t.ai = t.rows.length + 1; }
     } else if (st.op === 'drop') {
       const i = find(st.name); if (i < 0) throw err(1091, '42000', `Não dá para apagar '${st.name}': a coluna não existe.`);
-      if (t.cols[i].pk) throw err(1090, '42000', 'Não dá para apagar a chave primária por aqui.');
+      if (t.cols[i].pk && t.cols.filter(c => c.pk).length === 1 && Object.values(d.tables).some(o => o.fks && o.fks.some(f => f.rt.toLowerCase() === t.name.toLowerCase()))) throw err(1553, 'HY000', `A coluna '${st.name}' é referenciada por uma chave estrangeira.`);
       if (t.fks.some(f => f.col.toLowerCase() === st.name.toLowerCase())) throw err(1553, 'HY000', `A coluna '${st.name}' é usada por uma chave estrangeira.`);
-      for (const o of Object.values(d.tables)) if (o.fks.some(f => f.rt.toLowerCase() === t.name.toLowerCase() && f.rc.toLowerCase() === st.name.toLowerCase())) throw err(1553, 'HY000', `A coluna '${st.name}' é referenciada pela tabela '${o.name}'.`);
+      for (const o of Object.values(d.tables)) if (o.fks && o.fks.some(f => f.rt.toLowerCase() === t.name.toLowerCase() && f.rc.toLowerCase() === st.name.toLowerCase())) throw err(1553, 'HY000', `A coluna '${st.name}' é referenciada pela tabela '${o.name}'.`);
+      if (t.cols.length === 1) throw err(1090, '42000', 'Não dá para apagar todas as colunas da tabela. Use DROP TABLE.');
       t.cols.splice(i, 1); t.rows.forEach(r => r.splice(i, 1));
-    } else if (st.op === 'modify') {
-      const i = find(st.col.n); if (i < 0) throw err(1054, '42S22', `Coluna '${st.col.n}' desconhecida.`);
-      const col = Object.assign({}, st.col); if (col.def !== undefined) col.def = this.evalDefault(col); delete col.ref; if (t.cols[i].pk) { col.pk = true; col.nn = true; }
+      t.uniqs = (t.uniqs || []).filter(u => !u.some(n => n.toLowerCase() === st.name.toLowerCase()));
+    } else if (st.op === 'modify' || st.op === 'change') {
+      const oldName = st.op === 'change' ? st.name : st.col.n;
+      const i = find(oldName); if (i < 0) throw err(1054, '42S22', `Coluna '${oldName}' desconhecida.`);
+      if (st.op === 'change' && st.col.n.toLowerCase() !== oldName.toLowerCase() && find(st.col.n) >= 0) throw err(1060, '42S21', `Nome de coluna duplicado '${st.col.n}'.`);
+      const col = Object.assign({}, st.col); if (col.def !== undefined) col.def = this.keepDef(col); delete col.ref; delete col.checks; if (t.cols[i].pk) { col.pk = true; col.nn = true; } if (t.cols[i].uniq) col.uniq = true;
       const rows = t.rows.map((r, ri) => { const v = r[i]; if (v === null && col.nn) throw err(1138, '22004', `Valor NULL inválido: a coluna '${col.n}' não aceita NULL.`); return v === null ? null : this.coerce(col, v, ri + 1); });
-      t.cols[i] = col; t.rows.forEach((r, ri) => { r[i] = rows[ri]; });
+      const old = t.cols[i].n; t.cols[i] = col; t.rows.forEach((r, ri) => { r[i] = rows[ri]; });
+      if (st.op === 'change' && col.n !== old) { t.fks.forEach(f => { if (f.col === old) f.col = col.n; }); for (const o of Object.values(d.tables)) (o.fks || []).forEach(f => { if (f.rt === t.name && f.rc === old) f.rc = col.n; }); t.uniqs = (t.uniqs || []).map(u => u.map(n => n === old ? col.n : n)); }
+      if (st.first || st.after) { const pos = place(col, i, st); const [cc] = t.cols.splice(i, 1); const rr = t.rows.map(r => r.splice(i, 1)[0]); const p2 = pos > i ? pos - 1 : pos; t.cols.splice(p2, 0, cc); t.rows.forEach((r, k) => r.splice(p2, 0, rr[k])); }
     } else if (st.op === 'rencol') {
       const i = find(st.name); if (i < 0) throw err(1054, '42S22', `Coluna '${st.name}' desconhecida.`); if (find(st.to) >= 0) throw err(1060, '42S21', `Nome de coluna duplicado '${st.to}'.`);
       const old = t.cols[i].n; t.cols[i].n = st.to; t.fks.forEach(f => { if (f.col === old) f.col = st.to; });
-      for (const o of Object.values(d.tables)) o.fks.forEach(f => { if (f.rt === t.name && f.rc === old) f.rc = st.to; });
+      for (const o of Object.values(d.tables)) (o.fks || []).forEach(f => { if (f.rt === t.name && f.rc === old) f.rc = st.to; });
+      t.uniqs = (t.uniqs || []).map(u => u.map(n => n === old ? st.to : n));
     } else if (st.op === 'rentbl') {
-      if (Object.keys(d.tables).some(x => x.toLowerCase() === st.to.toLowerCase())) throw err(1050, '42S01', `A tabela '${st.to}' já existe.`);
-      const old = t.name; delete d.tables[old]; t.name = st.to; d.tables[st.to] = t; for (const o of Object.values(d.tables)) o.fks.forEach(f => { if (f.rt === old) f.rt = st.to; });
+      if (Object.keys(d.tables).some(x => x.toLowerCase() === st.to.toLowerCase() && x !== t.name)) throw err(1050, '42S01', `A tabela '${st.to}' já existe.`);
+      const old = t.name; delete d.tables[old]; t.name = st.to; d.tables[st.to] = t; for (const o of Object.values(d.tables)) (o.fks || []).forEach(f => { if (f.rt === old) f.rt = st.to; });
     } else if (st.op === 'addfk') {
       const own = t.cols.find(c => c.n.toLowerCase() === st.fk.col.toLowerCase()); if (!own) throw err(1072, '42000', `A coluna '${st.fk.col}' não existe.`);
-      const rt = Object.values(d.tables).find(x => x.name.toLowerCase() === st.fk.rt.toLowerCase()); if (!rt) throw err(1824, 'HY000', `Não foi possível abrir a tabela referenciada '${st.fk.rt}'.`);
+      const rt = Object.values(d.tables).find(x => x.name.toLowerCase() === st.fk.rt.toLowerCase() && !x.view); if (!rt) throw err(1824, 'HY000', `Não foi possível abrir a tabela referenciada '${st.fk.rt}'.`);
       const rc = rt.cols.find(c => c.n.toLowerCase() === st.fk.rc.toLowerCase()); if (!rc) throw err(1822, 'HY000', `A coluna '${st.fk.rc}' não existe em '${rt.name}'.`);
+      if ((st.fk.onDelete === 'SET NULL' || st.fk.onUpdate === 'SET NULL') && own.nn) throw err(1830, 'HY000', `A coluna '${own.n}' é NOT NULL e não pode usar SET NULL na chave estrangeira.`);
       const ri = rt.cols.indexOf(rc), oi = t.cols.indexOf(own);
-      for (const r of t.rows) if (r[oi] !== null && !rt.rows.some(x => cmpVals(x[ri], r[oi]) === 0)) throw err(1452, '23000', 'Não dá para criar a chave estrangeira: já existem linhas apontando para valores que não existem na tabela referenciada.');
-      t.fks.push({ col: own.n, rt: rt.name, rc: rc.n, name: `${t.name}_ibfk_${t.fks.length + 1}` });
+      for (const r of t.rows) if (r[oi] !== null && !(rt === t ? t.rows : rt.rows).some(x => cmpVals(x[ri], r[oi]) === 0)) throw err(1452, '23000', 'Não dá para criar a chave estrangeira: já existem linhas apontando para valores que não existem na tabela referenciada.');
+      t.fks.push({ col: own.n, rt: rt.name, rc: rc.n, name: st.fk.name || `${t.name}_ibfk_${t.fks.length + 1}`, onDelete: st.fk.onDelete || null, onUpdate: st.fk.onUpdate || null });
+    } else if (st.op === 'dropfk') {
+      const i = t.fks.findIndex(f => f.name.toLowerCase() === st.name.toLowerCase()); if (i < 0) throw err(1091, '42000', `Não dá para apagar a chave estrangeira '${st.name}': ela não existe. Veja o nome com SHOW CREATE TABLE ${t.name};`);
+      t.fks.splice(i, 1);
+    } else if (st.op === 'addpk') {
+      if (t.cols.some(c => c.pk)) throw err(1068, '42000', 'Já existe uma chave primária nesta tabela. Apague-a antes com DROP PRIMARY KEY.');
+      const idx = st.cols.map(n => { const i = find(n); if (i < 0) throw err(1072, '42000', `A coluna-chave '${n}' não existe na tabela.`); return i; });
+      const seen = new Set(); for (const r of t.rows) { if (idx.some(i => r[i] === null)) throw err(1138, '22004', 'Valor NULL inválido: coluna de chave primária não aceita NULL.'); const k = idx.map(i => keyOf(r[i])).join('\u0001'); if (seen.has(k)) throw err(1062, '23000', `Entrada duplicada '${idx.map(i => r[i]).join('-')}' para a chave PRIMARY.`); seen.add(k); }
+      idx.forEach(i => { t.cols[i].pk = true; t.cols[i].nn = true; });
+    } else if (st.op === 'droppk') {
+      if (!t.cols.some(c => c.pk)) throw err(1091, '42000', 'Não dá para apagar a chave primária: ela não existe.');
+      if (t.cols.some(c => c.pk && c.ai)) throw err(1075, '42000', 'Há uma coluna AUTO_INCREMENT que depende da chave primária.');
+      if (Object.values(d.tables).some(o => o.fks && o.fks.some(f => f.rt.toLowerCase() === t.name.toLowerCase() && t.cols.some(c => c.pk && c.n === f.rc)))) throw err(1553, 'HY000', 'A chave primária é referenciada por uma chave estrangeira.');
+      t.cols.forEach(c => { c.pk = false; });
+    } else if (st.op === 'adduniq') {
+      const idx = st.cols.map(n => { const i = find(n); if (i < 0) throw err(1072, '42000', `A coluna-chave '${n}' não existe na tabela.`); return i; });
+      const seen = new Set(); for (const r of t.rows) { if (idx.some(i => r[i] === null)) continue; const k = idx.map(i => keyOf(r[i])).join('\u0001'); if (seen.has(k)) throw err(1062, '23000', `Entrada duplicada '${idx.map(i => r[i]).join('-')}' para a chave única.`); seen.add(k); }
+      if (idx.length === 1) t.cols[idx[0]].uniq = true; else { t.uniqs = t.uniqs || []; t.uniqs.push(st.cols.map((n, k) => t.cols[idx[k]].n)); }
+    } else if (st.op === 'addcheck') {
+      t.checks = t.checks || []; const chk = { e: st.chk.e, text: st.chk.text, name: st.chk.name || `${t.name}_chk_${t.checks.length + 1}` };
+      const sc = this.checkScope(t); for (const r of t.rows) { sc.row = [r]; const v = this.ev(chk.e, sc, null); if (v !== null && !truthy(v)) throw err(3819, 'HY000', `Não dá para criar a restrição CHECK '${chk.name}': há linhas que não a respeitam.`); }
+      t.checks.push(chk);
+    } else if (st.op === 'dropcheck') {
+      const i = (t.checks || []).findIndex(c => c.name.toLowerCase() === st.name.toLowerCase()); if (i < 0) throw err(3940, 'HY000', `A restrição '${st.name}' não existe.`); t.checks.splice(i, 1);
+    } else if (st.op === 'setdef') {
+      const i = find(st.name); if (i < 0) throw err(1054, '42S22', `Coluna '${st.name}' desconhecida.`); const c = t.cols[i]; c.def = st.e; c.def = this.keepDef(c);
+    } else if (st.op === 'dropdef') {
+      const i = find(st.name); if (i < 0) throw err(1054, '42S22', `Coluna '${st.name}' desconhecida.`); t.cols[i].def = undefined;
+    } else if (st.op === 'setai') {
+      t.ai = Math.max(st.n, t.ai > 1 ? 1 : 1);
     }
-    return { type: 'ok', affected: 0, msg: `0 linha(s) afetada(s)  Registros: ${t.rows.length}  Duplicados: 0  Avisos: 0`, refresh: true };
   }
   /* ----- DML ----- */
   coerce(c, v, rowNo) {
@@ -917,18 +1225,28 @@ class Server {
     switch (c.type) {
       case 'int': case 'bool': {
         if (!isNum(v) && !/^\s*[-+]?\d+(\.\d+)?\s*$/.test(v)) throw bad(`Valor inteiro incorreto: '${v}' para a coluna '${c.n}' na linha ${rowNo}. Coluna numérica não aceita texto.`);
-        const x = Math.round(toNum(v)); if (Math.abs(x) > 2147483647) throw err(1264, '22003', `Valor fora do limite para a coluna '${c.n}' na linha ${rowNo}.`);
-        if (c.raw === 'TINYINT' && (x > 127 || x < -128)) throw err(1264, '22003', `Valor fora do limite para a coluna '${c.n}' na linha ${rowNo}.`);
+        const x = Math.round(toNum(v)); const lim = { TINYINT: [-128, 127, 255], SMALLINT: [-32768, 32767, 65535], MEDIUMINT: [-8388608, 8388607, 16777215], BIGINT: [-9007199254740991, 9007199254740991, 9007199254740991] }[c.raw] || [-2147483648, 2147483647, 4294967295];
+        const lo = c.unsigned ? 0 : lim[0], hi = c.unsigned ? lim[2] : lim[1];
+        if (x < lo || x > hi) throw err(1264, '22003', `Valor fora do limite para a coluna '${c.n}' na linha ${rowNo}: ${c.raw} ${c.unsigned ? 'UNSIGNED ' : ''}aceita de ${lo} a ${hi}.`);
         return x;
       }
       case 'decimal': {
         if (!isNum(v) && !/^\s*[-+]?(\d+\.?\d*|\.\d+)\s*$/.test(v)) throw bad(`Valor decimal incorreto: '${v}' para a coluna '${c.n}' na linha ${rowNo}.`);
         const x = round(toNum(v), c.scale); if (Math.abs(x) >= Math.pow(10, c.prec - c.scale)) throw err(1264, '22003', `Valor fora do limite para a coluna '${c.n}' na linha ${rowNo}: ${c.raw}(${c.prec},${c.scale}) aceita no máximo ${c.prec - c.scale} dígito(s) antes da vírgula.`);
+        if (c.unsigned && x < 0) throw err(1264, '22003', `Valor fora do limite para a coluna '${c.n}' na linha ${rowNo}: UNSIGNED não aceita negativos.`);
         return x;
       }
-      case 'float': { if (!isNum(v) && !/^\s*[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?\s*$/.test(v)) throw bad(`Valor numérico incorreto: '${v}' para a coluna '${c.n}' na linha ${rowNo}.`); return toNum(v); }
+      case 'float': { if (!isNum(v) && !/^\s*[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?\s*$/.test(v)) throw bad(`Valor numérico incorreto: '${v}' para a coluna '${c.n}' na linha ${rowNo}.`); const x = toNum(v); if (c.unsigned && x < 0) throw err(1264, '22003', `Valor fora do limite para a coluna '${c.n}' na linha ${rowNo}: UNSIGNED não aceita negativos.`); return c.scale != null && c.len != null ? round(x, c.scale) : x; }
       case 'varchar': case 'char': { const s = String(v); if (s.length > c.len) throw err(1406, '22001', `Texto grande demais para a coluna '${c.n}' na linha ${rowNo}: o limite é ${c.len} caracteres e o texto tem ${s.length}.`); return s; }
-      case 'date': case 'datetime': { const s = String(v); if (!/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}(:\d{2})?)?$/.test(s)) throw err(1292, '22007', `Valor de data incorreto: '${s}' para a coluna '${c.n}' na linha ${rowNo}. Use o formato AAAA-MM-DD.`); return c.type === 'date' ? s.slice(0, 10) : (s.length === 10 ? s + ' 00:00:00' : s); }
+      case 'enum': { const m = c.vals.find(x => fold(x) === fold(v)); if (m === undefined) throw err(1265, '01000', `Dados truncados na coluna '${c.n}' na linha ${rowNo}: '${v}' não é um dos valores permitidos (${c.vals.map(x => "'" + x + "'").join(', ')}).`); return m; }
+      case 'date': case 'datetime': {
+        const s = String(v); const m = /^(\d{4})-(\d{2})-(\d{2})( \d{2}:\d{2}(:\d{2})?)?$/.exec(s);
+        const okDay = m && +m[2] >= 1 && +m[2] <= 12 && +m[3] >= 1 && +m[3] <= new Date(Date.UTC(+m[1], +m[2], 0)).getUTCDate();
+        if (!m || !okDay) throw err(1292, '22007', `Valor de data incorreto: '${s}' para a coluna '${c.n}' na linha ${rowNo}. Use o formato AAAA-MM-DD (e uma data que exista).`);
+        if (c.type === 'date') return s.slice(0, 10); const tm = m[4] ? m[4].trim() : '00:00'; return s.slice(0, 10) + ' ' + (tm.length === 5 ? tm + ':00' : tm);
+      }
+      case 'time': { const s = String(v); const m = /^(-?\d{1,3}):(\d{2})(:(\d{2}))?$/.exec(s); if (!m || +m[2] > 59 || (m[4] && +m[4] > 59)) throw err(1292, '22007', `Valor de hora incorreto: '${s}' para a coluna '${c.n}' na linha ${rowNo}. Use HH:MM:SS.`); return `${m[1].padStart(2, '0')}:${m[2]}:${m[4] || '00'}`; }
+      case 'year': { const x = Math.round(toNum(v)); if (!(x === 0 || (x >= 1901 && x <= 2155))) throw err(1264, '22003', `Valor fora do limite para a coluna '${c.n}' na linha ${rowNo}: YEAR aceita de 1901 a 2155.`); return x; }
       default: return String(v);
     }
   }
@@ -937,12 +1255,14 @@ class Server {
     const pk = t.cols.map((c, i) => c.pk ? i : -1).filter(i => i >= 0);
     if (pk.length) { const dup = t.rows.some((r, ri) => ri !== ignoreIdx && pk.every(i => cmpVals(r[i], row[i]) === 0)); if (dup) throw err(1062, '23000', `Entrada duplicada '${pk.map(i => row[i]).join('-')}' para a chave PRIMARY. Já existe uma linha com esse id.`); }
     t.cols.forEach((c, i) => { if (c.uniq && row[i] !== null && t.rows.some((r, ri) => ri !== ignoreIdx && cmpVals(r[i], row[i]) === 0)) throw err(1062, '23000', `Entrada duplicada '${row[i]}' para a coluna única '${c.n}'.`); });
+    for (const u of (t.uniqs || [])) { const ix = u.map(n => t.cols.findIndex(c => c.n.toLowerCase() === n.toLowerCase())); if (ix.some(i => row[i] === null)) continue; if (t.rows.some((r, ri) => ri !== ignoreIdx && ix.every(i => cmpVals(r[i], row[i]) === 0))) throw err(1062, '23000', `Entrada duplicada '${ix.map(i => row[i]).join('-')}' para a chave única (${u.join(', ')}).`); }
     for (const f of t.fks) {
       const i = t.cols.findIndex(c => c.n === f.col); if (row[i] === null) continue;
       const rt = Object.values(d.tables).find(x => x.name === f.rt); const ri = rt.cols.findIndex(c => c.n === f.rc);
       const pool = rt === t ? t.rows.concat([row]) : rt.rows;
       if (!pool.some(x => cmpVals(x[ri], row[i]) === 0)) throw err(1452, '23000', `Não dá para guardar: ${f.col} = ${row[i]} não existe em ${f.rt}(${f.rc}). A chave estrangeira (${f.name}) protege o vínculo entre as tabelas.`);
     }
+    if (t.checks && t.checks.length) { const sc = this.checkScope(t); sc.row = [row]; for (const k of t.checks) { const v = this.ev(k.e, sc, null); if (v !== null && !truthy(v)) throw err(3819, 'HY000', `A restrição CHECK '${k.name}' foi violada: ${k.text}.`); } }
   }
   checkChildren(d, t, rowsGone, all) {
     for (const o of Object.values(d.tables)) for (const f of o.fks) {
@@ -955,68 +1275,125 @@ class Server {
       }
     }
   }
+  findConflict(t, row) {
+    const pk = t.cols.map((c, i) => c.pk ? i : -1).filter(i => i >= 0);
+    for (let ri = 0; ri < t.rows.length; ri++) {
+      const r = t.rows[ri];
+      if (pk.length && pk.every(i => cmpVals(r[i], row[i]) === 0)) return ri;
+      if (t.cols.some((c, i) => c.uniq && row[i] !== null && cmpVals(r[i], row[i]) === 0)) return ri;
+      for (const u of (t.uniqs || [])) { const ix = u.map(n => t.cols.findIndex(c => c.n.toLowerCase() === n.toLowerCase())); if (!ix.some(i => row[i] === null) && ix.every(i => cmpVals(r[i], row[i]) === 0)) return ri; }
+    }
+    return -1;
+  }
   doInsert(st) {
-    const d = this.useDb(st.db); const t = this.table(st.db, st.tbl);
+    const d = this.useDb(st.db); const t = this.wtable(st.db, st.tbl); const snap = JSON.stringify(d.tables);
     const idx = st.cols ? st.cols.map(n => { const i = t.cols.findIndex(c => c.n.toLowerCase() === n.toLowerCase()); if (i < 0) throw err(1054, '42S22', `Coluna '${n}' desconhecida em 'field list'.`); return i; }) : t.cols.map((_, i) => i);
     if (st.cols && new Set(idx).size !== idx.length) throw err(1110, '42000', 'Coluna repetida na lista do INSERT.');
     let src; if (st.sel) { this.clause = ''; src = this.runSelect(st.sel, null).rows.map(r => r.map(v => ({ v }))); } else src = st.rows;
-    const scope = { src: [], row: [], parent: null }; let ai = t.ai; const added = []; const before = t.rows.length;
+    const scope = { src: [], row: [], parent: null }; let ai = t.ai; let added = 0, upd = 0, skipped = 0; let firstId = null; const mode = st.mode || 'plain';
     try { src.forEach((vals, ri) => {
       if (vals.length !== idx.length) throw err(1136, '21S01', `O número de colunas não bate com o número de valores na linha ${ri + 1}. Foram informadas ${idx.length} coluna(s) e ${vals.length} valor(es).`);
       const row = t.cols.map(c => { const dv = this.evalDefault(c); return dv === undefined ? null : dv; });
       const given = new Set();
       vals.forEach((e, j) => { const col = t.cols[idx[j]]; let v; if (e && e.k === 'default') return; v = e && e.k ? (this.clause = 'field list', this.ev(e, scope, null)) : e.v; given.add(idx[j]); row[idx[j]] = v === null ? null : this.coerce(col, v, ri + 1); });
       t.cols.forEach((c, i) => {
-        if (c.ai) { if (!given.has(i) || row[i] === null || row[i] === 0) row[i] = ai++; else if (row[i] >= ai) ai = row[i] + 1; }
-        else if (!given.has(i) && c.nn && c.def === undefined) throw err(1364, 'HY000', `O campo '${c.n}' é obrigatório (NOT NULL) e não tem valor padrão. Informe um valor para ele.`);
+        if (c.ai) { if (!given.has(i) || row[i] === null || row[i] === 0) { row[i] = ai++; if (firstId === null) firstId = row[i]; } else if (row[i] >= ai) ai = row[i] + 1; }
+        else if (!given.has(i) && c.nn && c.def === undefined) { if (c.type === 'enum') row[i] = c.vals[0]; else throw err(1364, 'HY000', `O campo '${c.n}' é obrigatório (NOT NULL) e não tem valor padrão. Informe um valor para ele.`); }
       });
-      this.checkRow(d, t, row, ri + 1);
-      t.rows.push(row); added.push(row);
-    }); } catch (e) { t.rows.length = before; throw e; }
-    t.ai = Math.max(t.ai, ai);
-    return { type: 'ok', affected: added.length, msg: `${added.length} linha(s) afetada(s)  Registros: ${added.length}  Duplicados: 0  Avisos: 0`, refresh: true };
+      if (mode === 'plain') { this.checkRow(d, t, row, ri + 1); t.rows.push(row); added++; return; }
+      const ci = this.findConflict(t, row);
+      if (ci >= 0) {
+        if (mode === 'ignore') { skipped++; return; }
+        if (mode === 'replace') { const old = t.rows[ci]; this.deleteRows(d, t, [old], new Set([old])); this.checkRow(d, t, row, ri + 1); t.rows.push(row); added += 2; return; }
+        if (mode === 'dup') {
+          const cur = t.rows[ci]; const sc = { src: [{ alias: t.name, name: t.name, cols: t.cols.map(c => ({ n: c.n, scale: c.type === 'decimal' ? c.scale : null })) }], row: [cur], parent: null };
+          this._ins = { t, row }; const nr = cur.slice();
+          try { st.dup.forEach(s => { const k = t.cols.findIndex(c => c.n.toLowerCase() === s.c.toLowerCase()); if (k < 0) throw err(1054, '42S22', `Coluna '${s.c}' desconhecida em 'field list'.`); this.clause = 'field list'; const v = this.ev(s.e, sc, null); nr[k] = v === null ? null : this.coerce(t.cols[k], v, ri + 1); }); } finally { this._ins = null; }
+          if (nr.some((v, i) => v !== cur[i])) { this.checkRow(d, t, nr, ri + 1, ci); this.updateRefs(d, t, cur, nr); t.rows[ci] = nr; upd += 2; } return;
+        }
+      }
+      if (mode === 'ignore') { try { this.checkRow(d, t, row, ri + 1); } catch (e) { if (e instanceof SqlError) { skipped++; return; } throw e; } t.rows.push(row); added++; return; }
+      this.checkRow(d, t, row, ri + 1); t.rows.push(row); added++;
+    }); } catch (e) { this.restore(d, snap); throw e; }
+    t.ai = Math.max(t.ai, ai); if (firstId !== null) this.lastId = firstId;
+    const aff = added + upd;
+    return { type: 'ok', affected: aff, msg: `${aff} linha(s) afetada(s)  Registros: ${src.length}  Duplicados: ${skipped + (mode === 'dup' || mode === 'replace' ? 0 : 0)}  Avisos: ${skipped}`, refresh: true };
   }
   safeCheck(t, where, verb) {
     if (!this.safe) return;
     let key = false; walk(where, x => { if (x.k === 'col' && t.cols.some(c => c.pk && c.n.toLowerCase() === x.c.toLowerCase())) key = true; });
     if (!key) throw err(1175, 'HY000', `Modo seguro ativado: você tentou ${verb} sem um WHERE que use uma coluna-chave (como id). Use WHERE id = ... ou desligue o Modo seguro na barra de ferramentas.`);
   }
-  matching(t, where, alias) {
+  matching(t, where, alias, st) {
     const scope = { src: [{ alias: alias || t.name, name: t.name, cols: t.cols.map(c => ({ n: c.n, scale: c.type === 'decimal' ? c.scale : null })) }], row: null, parent: null };
-    this.clause = 'where clause'; const out = [];
+    this.clause = 'where clause'; let out = [];
     t.rows.forEach((r, i) => { scope.row = [r]; if (!where || truthy(this.ev(where, scope, null))) out.push(i); });
+    if (st && st.order) {
+      this.clause = 'order clause';
+      const keys = new Map(out.map(i => { scope.row = [t.rows[i]]; return [i, st.order.map(o => this.ev(o.e, scope, null))]; }));
+      out.sort((a, b) => { for (let k = 0; k < st.order.length; k++) { const x = keys.get(a)[k], y = keys.get(b)[k]; let c; if (x === null && y === null) c = 0; else if (x === null) c = -1; else if (y === null) c = 1; else c = cmpVals(x, y); if (c) return c * st.order[k].dir; } return a - b; });
+    }
+    if (st && st.limit != null) out = out.slice(0, st.limit);
     return { idx: out, scope };
   }
+  deleteRows(d, t, gone, seen) {
+    for (const o of Object.values(d.tables)) for (const f of (o.fks || [])) {
+      if (f.rt !== t.name) continue;
+      const oi = o.cols.findIndex(c => c.n === f.col), ri = t.cols.findIndex(c => c.n === f.rc);
+      const kids = o.rows.filter(x => x[oi] !== null && !seen.has(x) && gone.some(g => cmpVals(x[oi], g[ri]) === 0));
+      if (!kids.length) continue;
+      const act = f.onDelete || 'RESTRICT';
+      if (act === 'CASCADE') { kids.forEach(k => seen.add(k)); this.deleteRows(d, o, kids, seen); }
+      else if (act === 'SET NULL') { if (o.cols[oi].nn) throw err(1048, '23000', `Não dá para aplicar SET NULL: a coluna '${f.col}' da tabela '${o.name}' não aceita NULL.`); kids.forEach(k => { k[oi] = null; }); }
+      else throw err(1451, '23000', `Não dá para apagar ou alterar essa linha: a tabela '${o.name}' ainda tem linhas ligadas a ela (${f.name}: ${f.col} → ${t.name}.${f.rc}). Apague ou altere primeiro as linhas filhas.`);
+    }
+    const set = new Set(gone); t.rows = t.rows.filter(r => !set.has(r));
+  }
+  updateRefs(d, t, oldRow, newRow) {
+    t.cols.forEach((c, i) => {
+      if (cmpVals(oldRow[i] === null ? '' : oldRow[i], newRow[i] === null ? '' : newRow[i]) === 0 && oldRow[i] === newRow[i]) return;
+      if (oldRow[i] === newRow[i]) return;
+      for (const o of Object.values(d.tables)) for (const f of (o.fks || [])) {
+        if (f.rt !== t.name || f.rc !== c.n) continue;
+        const oi = o.cols.findIndex(x => x.n === f.col);
+        const kids = o.rows.filter(x => x[oi] !== null && oldRow[i] !== null && cmpVals(x[oi], oldRow[i]) === 0 && x !== newRow);
+        if (!kids.length) continue;
+        const act = f.onUpdate || 'RESTRICT';
+        if (act === 'CASCADE') kids.forEach(k => { k[oi] = newRow[i]; });
+        else if (act === 'SET NULL') { if (o.cols[oi].nn) throw err(1048, '23000', `Não dá para aplicar SET NULL: a coluna '${f.col}' da tabela '${o.name}' não aceita NULL.`); kids.forEach(k => { k[oi] = null; }); }
+        else throw err(1451, '23000', `Não dá para apagar ou alterar essa linha: a tabela '${o.name}' ainda tem linhas ligadas a ela (${f.name}: ${f.col} → ${t.name}.${f.rc}). Apague ou altere primeiro as linhas filhas.`);
+      }
+    });
+  }
   doUpdate(st) {
-    const d = this.useDb(st.db); const t = this.table(st.db, st.tbl); this.safeCheck(t, st.where, 'alterar linhas');
-    const { idx, scope } = this.matching(t, st.where);
+    const d = this.useDb(st.db); const t = this.wtable(st.db, st.tbl); this.safeCheck(t, st.where, 'alterar linhas'); const snap = JSON.stringify(d.tables);
+    const { idx, scope } = this.matching(t, st.where, null, st);
     const ci = st.sets.map(s => { const i = t.cols.findIndex(c => c.n.toLowerCase() === s.c.toLowerCase()); if (i < 0) throw err(1054, '42S22', `Coluna '${s.c}' desconhecida em 'field list'.`); return i; });
     const plan = []; let changed = 0;
-    idx.forEach(ri => {
-      scope.row = [t.rows[ri]]; this.clause = 'field list'; const nr = t.rows[ri].slice();
-      st.sets.forEach((s, k) => { const v = s.e.k === 'default' ? (this.evalDefault(t.cols[ci[k]]) ?? null) : this.ev(s.e, scope, null); nr[ci[k]] = v === null ? null : this.coerce(t.cols[ci[k]], v, ri + 1); });
-      if (nr.some((v, i) => v !== t.rows[ri][i])) changed++;
-      plan.push([ri, nr]);
-    });
-    for (const [ri, nr] of plan) {
-      this.checkRow(d, t, nr, ri + 1, ri);
-      const pkChanged = t.cols.some((c, i) => nr[i] !== t.rows[ri][i] && t.fks.length === 0 && Object.values(d.tables).some(o => o.fks.some(f => f.rt === t.name && f.rc === c.n)));
-      if (pkChanged) this.checkChildren(d, t, [t.rows[ri]], false);
-    }
-    plan.forEach(([ri, nr]) => { t.rows[ri] = nr; });
+    try {
+      idx.forEach(ri => {
+        scope.row = [t.rows[ri]]; this.clause = 'field list'; const nr = t.rows[ri].slice();
+        st.sets.forEach((s, k) => { const v = s.e.k === 'default' ? (this.evalDefault(t.cols[ci[k]]) ?? null) : this.ev(s.e, scope, null); nr[ci[k]] = v === null ? null : this.coerce(t.cols[ci[k]], v, ri + 1); });
+        if (nr.some((v, i) => v !== t.rows[ri][i])) { changed++; t.cols.forEach((c, i) => { if (c.onupd && !ci.includes(i)) nr[i] = this.nowStr(c.type); }); }
+        plan.push([ri, nr]);
+      });
+      for (const [ri, nr] of plan) this.checkRow(d, t, nr, ri + 1, ri);
+      for (const [ri, nr] of plan) this.updateRefs(d, t, t.rows[ri], nr);
+      plan.forEach(([ri, nr]) => { t.rows[ri] = nr; });
+    } catch (e) { this.restore(d, snap); throw e; }
     return { type: 'ok', affected: changed, msg: `${changed} linha(s) afetada(s)  Encontradas: ${idx.length}  Alteradas: ${changed}  Avisos: 0`, refresh: true };
   }
   doDelete(st) {
-    const d = this.useDb(st.db); const t = this.table(st.db, st.tbl); this.safeCheck(t, st.where, 'apagar linhas');
-    const { idx } = this.matching(t, st.where); const gone = idx.map(i => t.rows[i]);
-    this.checkChildren(d, t, gone, false);
-    const set = new Set(idx); t.rows = t.rows.filter((_, i) => !set.has(i));
+    const d = this.useDb(st.db); const t = this.wtable(st.db, st.tbl); this.safeCheck(t, st.where, 'apagar linhas'); const snap = JSON.stringify(d.tables);
+    const { idx } = this.matching(t, st.where, null, st); const gone = idx.map(i => t.rows[i]);
+    try { this.deleteRows(d, t, gone, new Set(gone)); } catch (e) { this.restore(d, snap); throw e; }
     return { type: 'ok', affected: idx.length, msg: `${idx.length} linha(s) afetada(s)`, refresh: true };
   }
   /* ----- SELECT ----- */
   makeSource(s, parent) {
     if (s.sub) { const r = this.runSelect(s.sub, parent); return { alias: s.alias, name: s.alias, cols: r.cols.map(c => ({ n: c.name, scale: c.scale == null ? null : c.scale })), rows: r.rows.map(x => x.slice()), pk: [] }; }
     const t = this.table(s.db, s.name);
+    if (t.view) { const dn = this.useDb(s.db).name; const r = this.runView(dn, t); return { alias: s.alias || t.name, name: t.name, cols: r.cols.map(c => ({ n: c.name, scale: c.scale == null ? null : c.scale })), rows: r.rows.map(x => x.slice()), pk: [] }; }
     return { alias: s.alias || t.name, name: t.name, cols: t.cols.map(c => ({ n: c.n, scale: c.type === 'decimal' ? c.scale : null, pk: !!c.pk })), rows: t.rows };
   }
   resolve(scope, tbl, col) {
@@ -1080,7 +1457,9 @@ class Server {
         if (found) return e.neg ? 0 : 1; if (nul) return null; return e.neg ? 1 : 0;
       }
       case 'between': { const v = this.ev(e.e, scope, grp), a = this.ev(e.a, scope, grp), b = this.ev(e.b, scope, grp); if (v === null || a === null || b === null) return null; const r = cmpVals(v, a) >= 0 && cmpVals(v, b) <= 0; return r !== e.neg ? 1 : 0; }
-      case 'like': { const v = this.ev(e.e, scope, grp), p = this.ev(e.p, scope, grp); if (v === null || p === null) return null; const r = likeRe(String(p)).test(fold(v)); return r !== e.neg ? 1 : 0; }
+      case 'like': { const v = this.ev(e.e, scope, grp), p = this.ev(e.p, scope, grp); if (v === null || p === null) return null; let r; if (e.re) { try { r = new RegExp(String(p), 'i').test(String(v)); } catch (x) { throw err(3692, '42000', `Expressão regular inválida: '${p}'.`); } } else r = likeRe(String(p)).test(fold(v)); return r !== e.neg ? 1 : 0; }
+      case 'var': { const v = this.vars[e.n]; return v === undefined ? null : v; }
+      case 'exists': { const r = this.subRun(e.sel, scope); return r.rows.length ? 1 : 0; }
       case 'case': {
         const base = e.base ? this.ev(e.base, scope, grp) : null;
         for (const w of e.whens) { const c = this.ev(w[0], scope, grp); if (e.base ? (base !== null && c !== null && cmpVals(base, c) === 0) : truthy(c)) return this.ev(w[1], scope, grp); }
@@ -1102,11 +1481,13 @@ class Server {
       scope.row = keep;
       if (e.distinct) { const seen = new Set(); vals = vals.filter(v => { const k = keyOf(v); if (seen.has(k)) return false; seen.add(k); return true; }); }
       if (n === 'COUNT') return vals.length; if (!vals.length) return null;
+      if (n === 'GROUP_CONCAT') return vals.map(String).join(e.sep == null ? ',' : e.sep);
       if (n === 'SUM') return clean(vals.reduce((a, b) => a + toNum(b), 0));
       if (n === 'AVG') return clean(vals.reduce((a, b) => a + toNum(b), 0) / vals.length);
       if (n === 'MIN') return vals.reduce((a, b) => cmpVals(b, a) < 0 ? b : a);
       return vals.reduce((a, b) => cmpVals(b, a) > 0 ? b : a);
     }
+    if (n === 'VALUES') { if (!this._ins) throw err(1305, '42000', 'VALUES() só pode ser usado dentro de ON DUPLICATE KEY UPDATE.'); const col = e.args[0] && e.args[0].k === 'col' ? e.args[0].c : null; const i = col ? this._ins.t.cols.findIndex(c => c.n.toLowerCase() === col.toLowerCase()) : -1; if (i < 0) throw err(1054, '42S22', `Coluna '${col}' desconhecida em VALUES().`); return this._ins.row[i]; }
     const a = e.args.map(x => this.ev(x, scope, grp)); const s = x => x === null ? null : String(x);
     const need = (lo, hi) => { if (a.length < lo || a.length > (hi == null ? lo : hi)) throw err(1582, '42000', `Quantidade de argumentos incorreta para ${n}().`); };
     switch (n) {
@@ -1132,6 +1513,29 @@ class Server {
       case 'YEAR': need(1); return a[0] === null ? null : parseInt(String(a[0]).slice(0, 4), 10);
       case 'MONTH': need(1); return a[0] === null ? null : parseInt(String(a[0]).slice(5, 7), 10);
       case 'DAY': need(1); return a[0] === null ? null : parseInt(String(a[0]).slice(8, 10), 10);
+      case 'CURTIME': case 'CURRENT_TIME': { const d = new Date(), p = x => String(x).padStart(2, '0'); return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+      case 'HOUR': need(1); return a[0] === null ? null : parseInt(String(a[0]).slice(-8, -6), 10);
+      case 'MINUTE': need(1); return a[0] === null ? null : parseInt(String(a[0]).slice(-5, -3), 10);
+      case 'SECOND': need(1); return a[0] === null ? null : parseInt(String(a[0]).slice(-2), 10);
+      case 'DATE': need(1); return a[0] === null ? null : String(a[0]).slice(0, 10);
+      case 'DATEDIFF': { need(2); if (a[0] === null || a[1] === null) return null; const f = x => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(x)); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : NaN; }; const r = Math.round((f(a[0]) - f(a[1])) / 86400000); return isNaN(r) ? null : r; }
+      case 'DATE_FORMAT': { need(2); if (a[0] === null) return null; const m = /^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}):?(\d{2})?)?/.exec(String(a[0])); if (!m) return null; const M = { Y: m[1], y: m[1].slice(2), m: m[2], d: m[3], H: m[4] || '00', i: m[5] || '00', s: m[6] || '00' }; return String(a[1]).replace(/%([YymdHis%])/g, (x, c) => c === '%' ? '%' : M[c]); }
+      case 'SQRT': need(1); return a[0] === null || toNum(a[0]) < 0 ? null : clean(Math.sqrt(toNum(a[0])));
+      case 'SIGN': need(1); return a[0] === null ? null : Math.sign(toNum(a[0]));
+      case 'TRUNCATE': need(2); return a.some(x => x === null) ? null : (x => Math.trunc(toNum(a[0]) * x) / x)(Math.pow(10, toNum(a[1])));
+      case 'GREATEST': return a.some(x => x === null) ? null : a.reduce((x, y) => cmpVals(y, x) > 0 ? y : x);
+      case 'LEAST': return a.some(x => x === null) ? null : a.reduce((x, y) => cmpVals(y, x) < 0 ? y : x);
+      case 'REVERSE': need(1); return a[0] === null ? null : s(a[0]).split('').reverse().join('');
+      case 'LTRIM': need(1); return a[0] === null ? null : s(a[0]).replace(/^\s+/, '');
+      case 'RTRIM': need(1); return a[0] === null ? null : s(a[0]).replace(/\s+$/, '');
+      case 'REPEAT': need(2); return a.some(x => x === null) ? null : s(a[0]).repeat(Math.max(0, toNum(a[1])));
+      case 'LPAD': need(3); return a.some(x => x === null) ? null : s(a[0]).padStart(toNum(a[1]), s(a[2])).slice(-0 || undefined).slice(0, toNum(a[1]));
+      case 'RPAD': need(3); return a.some(x => x === null) ? null : s(a[0]).padEnd(toNum(a[1]), s(a[2])).slice(0, toNum(a[1]));
+      case 'INSTR': need(2); return a.some(x => x === null) ? null : fold(s(a[0])).indexOf(fold(s(a[1]))) + 1;
+      case 'LOCATE': need(2, 3); return a.some(x => x === null) ? null : fold(s(a[1])).indexOf(fold(s(a[0])), a[2] ? toNum(a[2]) - 1 : 0) + 1;
+      case 'CONCAT_WS': { if (a[0] === null) return null; return a.slice(1).filter(x => x !== null).map(String).join(String(a[0])); }
+      case 'LAST_INSERT_ID': return this.lastId;
+      case 'VALUES': { if (!this._ins) throw err(1305, '42000', 'VALUES() só pode ser usado dentro de ON DUPLICATE KEY UPDATE.'); const col = e.args[0] && e.args[0].k === 'col' ? e.args[0].c : null; const i = col ? this._ins.t.cols.findIndex(c => c.n.toLowerCase() === col.toLowerCase()) : -1; if (i < 0) throw err(1054, '42S22', `Coluna '${col}' desconhecida em VALUES().`); return this._ins.row[i]; }
       case 'DATABASE': return this.cur;
       case 'VERSION': return '8.0.36-simulado';
       case 'POWER': case 'POW': need(2); return a.some(x => x === null) ? null : clean(Math.pow(toNum(a[0]), toNum(a[1])));
@@ -1139,7 +1543,23 @@ class Server {
     }
     throw err(1305, '42000', `A função ${n}() não existe neste simulador.`);
   }
+  runUnion(u, parent) {
+    const keep = this.clause; const res = u.parts.map(s => this.runSelect(s, parent)); const n = res[0].cols.length;
+    res.forEach(r => { if (r.cols.length !== n) throw err(1222, '21000', 'Os SELECTs ligados por UNION têm quantidade de colunas diferente. Todos precisam retornar o mesmo número de colunas.'); });
+    const dedupe = rows => { const seen = new Set(); return rows.filter(r => { const k = r.map(keyOf).join('\u0001'); if (seen.has(k)) return false; seen.add(k); return true; }); };
+    let rows = res[0].rows.map(r => r.slice());
+    for (let i = 1; i < res.length; i++) { rows = rows.concat(res[i].rows.map(r => r.slice())); if (!u.alls[i - 1]) rows = dedupe(rows); }
+    if (u.order && u.order.length) {
+      this.clause = 'order clause';
+      const ix = u.order.map(o => { if (o.e.k === 'num' && o.e.v >= 1 && o.e.v <= n) return o.e.v - 1; if (o.e.k === 'col' && !o.e.t) { const k = res[0].cols.findIndex(c => String(c.name).toLowerCase() === o.e.c.toLowerCase()); if (k >= 0) return k; } throw err(1054, '42S22', "Coluna desconhecida em 'order clause' do UNION. No UNION, ordene pelo nome da coluna do primeiro SELECT ou pela posição (ORDER BY 1)."); });
+      rows = rows.map((r, i) => [r, i]).sort((A, B) => { for (let k = 0; k < ix.length; k++) { const x = A[0][ix[k]], y = B[0][ix[k]]; let c; if (x === null && y === null) c = 0; else if (x === null) c = -1; else if (y === null) c = 1; else c = cmpVals(x, y); if (c) return c * u.order[k].dir; } return A[1] - B[1]; }).map(x => x[0]);
+    }
+    if (u.limit != null) rows = rows.slice(u.offset || 0, (u.offset || 0) + u.limit);
+    this.clause = keep;
+    return { cols: res[0].cols.map((c, i) => ({ name: c.name, scale: res.map(r => r.cols[i].scale).reduce((a, b) => a == null && b == null ? null : Math.max(a || 0, b || 0), null) })), rows };
+  }
   runSelect(sel, parent) {
+    if (sel.k === 'union') return this.runUnion(sel, parent);
     const scope = { src: [], row: null, parent };
     const savedClause = this.clause;
     let tuples;
@@ -1241,15 +1661,18 @@ class Server {
   }
 }
 function typeStr(c) {
-  switch (c.type) { case 'int': return c.raw === 'INTEGER' ? 'int' : c.raw.toLowerCase(); case 'decimal': return `decimal(${c.prec},${c.scale})`; case 'varchar': return `varchar(${c.len})`; case 'char': return `char(${c.len})`; case 'float': return c.raw.toLowerCase(); case 'datetime': return c.raw.toLowerCase(); case 'bool': return 'tinyint(1)'; default: return c.type; }
+  switch (c.type) { case 'int': return (c.raw === 'INTEGER' ? 'int' : c.raw.toLowerCase()) + (c.unsigned ? ' unsigned' : ''); case 'decimal': return `decimal(${c.prec},${c.scale})`; case 'varchar': return `varchar(${c.len})`; case 'char': return `char(${c.len})`; case 'float': return c.raw.toLowerCase(); case 'datetime': return c.raw.toLowerCase(); case 'bool': return 'tinyint(1)'; case 'enum': return 'enum(' + c.vals.map(v => "'" + v + "'").join(',') + ')'; case 'text': return c.raw.toLowerCase(); default: return c.type; }
 }
 function ddl(t) {
   const lines = t.cols.map(c => {
     let s = `  \`${c.n}\` ${typeStr(c)}`; if (c.nn && !c.pk) s += ' NOT NULL'; else if (c.pk) s += ' NOT NULL'; if (c.ai) s += ' AUTO_INCREMENT';
-    if (c.def !== undefined && c.def !== null) s += ' DEFAULT ' + (typeof c.def === 'number' ? c.def : `'${c.def}'`); else if (!c.nn && !c.pk) s += ' DEFAULT NULL'; return s;
+    if (c.def !== undefined && c.def !== null) s += ' DEFAULT ' + (c.def.dyn ? 'CURRENT_TIMESTAMP' : typeof c.def === 'number' ? c.def : `'${c.def}'`); else if (!c.nn && !c.pk) s += ' DEFAULT NULL'; if (c.onupd) s += ' ON UPDATE CURRENT_TIMESTAMP'; return s;
   });
   const pk = t.cols.filter(c => c.pk).map(c => '`' + c.n + '`'); if (pk.length) lines.push(`  PRIMARY KEY (${pk.join(',')})`);
-  t.fks.forEach(f => lines.push(`  CONSTRAINT \`${f.name}\` FOREIGN KEY (\`${f.col}\`) REFERENCES \`${f.rt}\` (\`${f.rc}\`)`));
+  t.cols.filter(c => c.uniq && !c.pk).forEach(c => lines.push(`  UNIQUE KEY \`${c.n}\` (\`${c.n}\`)`));
+  (t.uniqs || []).forEach(u => lines.push(`  UNIQUE KEY \`${u.join('_')}\` (${u.map(n => '`' + n + '`').join(',')})`));
+  t.fks.forEach(f => lines.push(`  CONSTRAINT \`${f.name}\` FOREIGN KEY (\`${f.col}\`) REFERENCES \`${f.rt}\` (\`${f.rc}\`)` + (f.onDelete ? ' ON DELETE ' + f.onDelete : '') + (f.onUpdate ? ' ON UPDATE ' + f.onUpdate : '')));
+  (t.checks || []).forEach(k => lines.push(`  CONSTRAINT \`${k.name}\` CHECK (${k.text})`));
   return `CREATE TABLE \`${t.name}\` (\n${lines.join(',\n')}\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`;
 }
 function fmtVal(v, scale) {
@@ -1508,6 +1931,7 @@ function exec(text, base) {
   const t = tabs[active]; const items = res; let sel = items.length - 1;
   for (let i = items.length - 1; i >= 0; i--) if (items[i].type === 'rows' || !items[i].ok) { sel = i; break; }
   t.rs = { items, sel };
+  $('#safe').checked = !!srv.safe;
   refreshAll(); renderEditor(); renderResults(); checkChallenge(res);
 }
 function runCurrent() {
@@ -1572,7 +1996,9 @@ function newTab(text, auto) { tabSeq++; tabs.push({ name: 'Consulta ' + tabSeq, 
 function closeTab(i) { tabs.splice(i, 1); if (active >= tabs.length) active = tabs.length - 1; else if (i < active) active--; switchTab(active); }
 
 /* ---------- navegador ---------- */
-function refreshAll() { refreshNames(); renderTree(); renderInfo(); $('#chip-db').textContent = srv.cur || '(nenhum)'; if (view === 'eer') drawEER(); }
+const shortType = c => { const x = E.typeStr(c); return x.length > 16 ? x.replace(/\(.*$/, '(…)') : x; };
+let lastCur = 'loja_games';
+function refreshAll() { if (srv.cur !== lastCur) { lastCur = srv.cur; if (srv.cur) expanded.add('db:' + srv.cur); } refreshNames(); renderTree(); renderInfo(); $('#chip-db').textContent = srv.cur || '(nenhum)'; if (view === 'eer') drawEER(); }
 function renderTree() {
   const q = fold($('#filter').value.trim()); let h = '';
   srv.dbNames().forEach(name => {
@@ -1589,11 +2015,11 @@ function renderTree() {
       else if (!shown.length) h += '<div class="tn dim" style="cursor:default"><span class="ch"></span><span class="nm">nenhuma tabela ainda</span></div>';
       shown.forEach(t => {
         const tk = 'tbl:' + t.name; const to = expanded.has(tk) || (!!q && t.cols.some(c => fold(c.n).includes(q)));
-        h += `<button class="tn ${to ? 'open' : ''} ${selTable === t.name && cur ? 'sel' : ''}" data-k="${esc(tk)}" data-t="${esc(t.name)}" data-db="${esc(name)}"><span class="ch">${ico('chev')}</span>${ico('tbl')}<span class="nm">${esc(t.name)}</span><span class="tact" data-run="${esc(t.name)}" role="button" tabindex="0" title="Ver os dados desta tabela" aria-label="Ver dados de ${esc(t.name)}">${ico('play')}</span></button>`;
+        h += `<button class="tn ${to ? 'open' : ''} ${selTable === t.name && cur ? 'sel' : ''}" data-k="${esc(tk)}" data-t="${esc(t.name)}" data-db="${esc(name)}"><span class="ch">${ico('chev')}</span>${ico('tbl')}<span class="nm">${esc(t.name)}${t.view ? ' <em style="font-style:normal;font:11px var(--mono);color:var(--mute)">view</em>' : ''}</span><span class="tact" data-run="${esc(t.name)}" role="button" tabindex="0" title="Ver os dados desta tabela" aria-label="Ver dados de ${esc(t.name)}">${ico('play')}</span></button>`;
         if (to) {
           h += '<div class="kids">';
           const fk = new Set(t.fks.map(f => f.col));
-          t.cols.forEach(c => { if (q && !fold(c.n).includes(q) && !fold(t.name).includes(q)) return; h += `<div class="tn" style="cursor:default" data-t="${esc(t.name)}"><span class="ch"></span>${c.pk ? ico('key', 'k-pk') : fk.has(c.n) ? ico('fk', 'k-fk') : ico('col')}<span class="nm">${esc(c.n)}</span><span class="ty">${esc(E.typeStr(c))}</span></div>`; });
+          t.cols.forEach(c => { if (q && !fold(c.n).includes(q) && !fold(t.name).includes(q)) return; h += `<div class="tn" style="cursor:default" data-t="${esc(t.name)}"><span class="ch"></span>${c.pk ? ico('key', 'k-pk') : fk.has(c.n) ? ico('fk', 'k-fk') : ico('col')}<span class="nm">${esc(c.n)}</span><span class="ty">${esc(shortType(c))}</span></div>`; });
           h += '</div>';
         }
       });
@@ -1622,7 +2048,7 @@ const BW = 232, RH = 24, HH = 34; let pos = {}, zoom = 1;
 function drawEER() {
   const d = srv.cur && srv.getDb(srv.cur); const svg = $('#eersvg'); $('#eer-db').textContent = d ? '· ' + d.name : '';
   if (!d || !Object.keys(d.tables).length) { svg.setAttribute('width', 400); svg.setAttribute('height', 160); svg.innerHTML = `<text x="24" y="60" class="tr" style="font-family:var(--ui)">Este banco ainda não tem tabelas.</text><text x="24" y="86" class="ty" style="font-family:var(--ui)">Crie uma com CREATE TABLE e o diagrama aparece aqui.</text>`; return; }
-  const tabsL = Object.values(d.tables).sort((a, b) => a.fks.length - b.fks.length || a.name.localeCompare(b.name));
+  const tabsL = Object.values(d.tables).filter(x => !x.view).sort((a, b) => a.fks.length - b.fks.length || a.name.localeCompare(b.name));
   const W = $('#eerbox').clientWidth || 800; const cols = Math.max(1, Math.min(3, Math.floor((W - 40) / (BW + 90)))); const colY = new Array(cols).fill(40);
   tabsL.forEach((t, i) => { if (!pos[t.name]) { const c = i % cols; pos[t.name] = { x: 40 + c * (BW + 110), y: colY[c] }; colY[c] += HH + t.cols.length * RH + 50; } });
   Object.keys(pos).forEach(k => { if (!d.tables[k]) delete pos[k]; });
@@ -1645,7 +2071,7 @@ function drawEER() {
     t.cols.forEach((c, i) => {
       const y = HH + i * RH; if (i) g += `<line class="rl" x1="0" x2="${BW}" y1="${y}" y2="${y}"/>`;
       const icon = c.pk ? `<path class="pk" transform="translate(9,${y + 6}) scale(.75)" d="M5 7.8a2.7 2.7 0 1 0 .01 0zM7 8.6 13 2.7l1.2 1.2-1.4 1.4 1 1-1.4 1.4-1-1-3 3z"/>` : fk.has(c.n) ? `<path class="fk" transform="translate(10,${y + 7})" d="M5 0l5 5-5 5-5-5z"/>` : `<circle cx="15" cy="${y + RH / 2}" r="2" fill="var(--mute)" opacity=".5"/>`;
-      g += icon + `<text class="tr" x="30" y="${y + 16}">${esc(c.n)}</text><text class="ty" x="${BW - 12}" y="${y + 16}" text-anchor="end">${esc(E.typeStr(c))}</text>`;
+      g += icon + `<text class="tr" x="30" y="${y + 16}">${esc(c.n)}</text><text class="ty" x="${BW - 12}" y="${y + 16}" text-anchor="end">${esc(shortType(c))}</text>`;
     });
     boxes += g + '</g>';
   });
@@ -1751,7 +2177,34 @@ $('#tree').addEventListener('click', ev => {
 $('#tree').addEventListener('dblclick', ev => { const b = ev.target.closest('.tn[data-t]'); if (b && b.dataset.k) openTableData(b.dataset.t); });
 $('#tree').addEventListener('keydown', ev => { const r = ev.target.closest('[data-run]'); if (r && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); openTableData(r.dataset.run); } });
 $('#filter').addEventListener('input', renderTree);
-$('#btn-reset').onclick = () => { const safe = srv.safe; srv = E.Server.fresh(PRISTINE, 'loja_games'); srv.safe = safe; pos = {}; selTable = null; refreshAll(); renderEditor(); toast('Banco restaurado para o estado das 40 etapas.'); };
+function sqlQuote(v, scale) { if (v === null || v === undefined) return 'NULL'; if (typeof v === 'number') return E.fmtVal(v, scale); return "'" + String(v).replace(/\\/g, '\\\\').replace(/'/g, "''") + "'"; }
+function exportScript(d) {
+  const tabs = Object.values(d.tables).filter(t => !t.view); const views = Object.values(d.tables).filter(t => t.view);
+  const done = new Set(), order = [];
+  const visit = t => { if (done.has(t.name)) return; done.add(t.name); t.fks.forEach(f => { const p = d.tables[f.rt]; if (p && p !== t) visit(p); }); order.push(t); };
+  tabs.sort((a, b) => a.name.localeCompare(b.name)).forEach(visit);
+  let out = `-- Banco "${d.name}" exportado do SQL Lab Workbench\nCREATE DATABASE IF NOT EXISTS \`${d.name}\`;\nUSE \`${d.name}\`;\n\n`;
+  order.forEach(t => {
+    out += E.ddl(t).replace(/^CREATE TABLE/, 'CREATE TABLE IF NOT EXISTS') + '\n';
+    if (t.rows.length) { out += `INSERT INTO \`${t.name}\` (${t.cols.map(c => '`' + c.n + '`').join(', ')}) VALUES\n` + t.rows.map(r => '  (' + r.map((v, i) => sqlQuote(v, t.cols[i].type === 'decimal' ? t.cols[i].scale : null)).join(', ') + ')').join(',\n') + ';\n'; }
+    out += '\n';
+  });
+  views.forEach(v => { out += `CREATE OR REPLACE VIEW \`${v.name}\` AS ${v.text};\n`; });
+  return out.replace(/\n+$/, '\n');
+}
+$('#btn-export').onclick = () => {
+  const d = srv.cur && srv.getDb(srv.cur); if (!d || !Object.keys(d.tables).length) { toast('Escolha um banco que tenha tabelas (USE nome;) antes de exportar.'); return; }
+  const blob = new Blob([exportScript(d)], { type: 'text/plain;charset=utf-8' }); const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = d.name + '.sql'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  toast('Arquivo ' + d.name + '.sql baixado. Guarde-o para abrir depois.');
+};
+$('#btn-import').onclick = () => $('#file-sql').click();
+$('#file-sql').onchange = e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return; const r = new FileReader();
+  r.onload = () => { newTab(String(r.result || ''), false); toast('Arquivo aberto em uma nova aba. Aperte Ctrl + Shift + Enter para executar tudo.'); };
+  r.readAsText(f); e.target.value = '';
+};
+$('#btn-reset').onclick = () => { const safe = srv.safe; srv = E.Server.fresh(PRISTINE, 'loja_games'); srv.safe = safe; pos = {}; selTable = null; refreshAll(); renderEditor(); toast('Restaurado: o loja_games voltou ao original e os bancos que você criou foram removidos.'); };
 /* diagrama */
 const svgEl = $('#eersvg');
 svgEl.addEventListener('pointerdown', ev => { const g = ev.target.closest('g.tbl'); if (!g) return; const p = eerPoint(ev); const t = g.dataset.t; drag = { t, dx: p.x - pos[t].x, dy: p.y - pos[t].y, moved: false }; svgEl.setPointerCapture(ev.pointerId); g.classList.add('drag'); });
